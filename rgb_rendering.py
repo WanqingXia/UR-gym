@@ -1,7 +1,11 @@
-import gymnasium as gym
+import sys
+import gymnasium
+sys.modules["gym"] = gymnasium
 from numpngw import write_apng  # pip install numpngw
+import UR_gym
 
-env = gym.make("URReachJointsDense-v1", render=True)
+
+env = gymnasium.make("UR5ReachJointsDense-v1", render=True)
 images = []
 
 
