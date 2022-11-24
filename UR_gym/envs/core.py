@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
+from collections import namedtuple
 
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from gymnasium.utils import seeding
 
-from UR_gym.pybullet import PyBullet
+from UR_gym.pyb_setup import PyBullet
 
 
 class PyBulletRobot(ABC):
@@ -34,6 +35,7 @@ class PyBulletRobot(ABC):
         with self.sim.no_rendering():
             self._load_robot(file_name, base_position)
             self.setup()
+
         self.action_space = action_space
         self.joint_indices = joint_indices
         self.joint_forces = joint_forces

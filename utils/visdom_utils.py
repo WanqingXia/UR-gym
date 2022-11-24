@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-# !\file
-#
-# \author  Wanqing Xia wxia612@aucklanduni.ac.nz
-# \date    2022-11-09
-#
-#
-# ---------------------------------------------------------------------
-
 import numpy as np
 from visdom import Visdom
 import time

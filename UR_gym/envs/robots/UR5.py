@@ -3,17 +3,17 @@ from typing import Optional
 import numpy as np
 from gymnasium import spaces
 
-from panda_gym.envs.core import PyBulletRobot
-from panda_gym.pybullet import PyBullet
+from UR_gym.envs.core import PyBulletRobot
+from UR_gym.pyb_setup import PyBullet
 
 
-class Panda(PyBulletRobot):
+class UR5(PyBulletRobot):
     """Panda robot in PyBullet.
 
     Args:
         sim (PyBullet): Simulation instance.
-        block_gripper (bool, optional): Whether the gripper is blocked. Defaults to False.
-        base_position (np.ndarray, optionnal): Position of the base base of the robot, as (x, y, z). Defaults to (0, 0, 0).
+        block_gripper (bool, optional): Whether the gripper is blocked. Defaults to True.
+        base_position (np.ndarray, optionnal): Position of the base of the robot, as (x, y, z). Defaults to (0, 0, 0).
         control_type (str, optional): "ee" to control end-effector displacement or "joints" to control joint angles.
             Defaults to "ee".
     """
@@ -21,33 +21,35 @@ class Panda(PyBulletRobot):
     def __init__(
         self,
         sim: PyBullet,
-        block_gripper: bool = False,
+        block_gripper: bool = True,
         base_position: Optional[np.ndarray] = None,
         control_type: str = "ee",
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
         self.block_gripper = block_gripper
         self.control_type = control_type
-        n_action = 3 if self.control_type == "ee" else 7  # control (x, y z) if "ee", else, control the 7 joints
+        n_action = 3 if self.control_type == "ee" else 6  # control (x, y z) if "ee", else, control the 6 joints
         n_action += 0 if self.block_gripper else 1
         action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
         super().__init__(
             sim,
-            body_name="panda",
-            file_name="franka_panda/panda.urdf",
+            body_name="UR5",
+            file_name="/home/wxia612/UR-gym/UR_gym/envs/robots/urdf/ur5.urdf",
             base_position=base_position,
             action_space=action_space,
-            joint_indices=np.array([0, 1, 2, 3, 4, 5, 6, 9, 10]),
-            joint_forces=np.array([87.0, 87.0, 87.0, 87.0, 12.0, 120.0, 120.0, 170.0, 170.0]),
+            joint_indices=np.array([0, 1, 2, 3, 4, 5]),  # 1-6: robot joints, 9: gripper finger
+            joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.fingers_indices = np.array([9, 10])
-        self.neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
-        self.ee_link = 11
-        self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
-        self.sim.set_lateral_friction(self.body_name, self.fingers_indices[1], lateral_friction=1.0)
-        self.sim.set_spinning_friction(self.body_name, self.fingers_indices[0], spinning_friction=0.001)
-        self.sim.set_spinning_friction(self.body_name, self.fingers_indices[1], spinning_friction=0.001)
+        self.fingers_indices = np.array([9])
+        self.neutral_joint_values = np.array([0.0, -1.5446774605904932, 1.343946009733127,
+                                              -1.3708613585093699, -1.5707970583733368, 0.0009377758247187636])
+        self.ee_link = 6  # the id of ee_link
+        self.gripper_range = [0, 0.085]
+        # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
+        # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[1], lateral_friction=1.0)
+        # self.sim.set_spinning_friction(self.body_name, self.fingers_indices[0], spinning_friction=0.001)
+        # self.sim.set_spinning_friction(self.body_name, self.fingers_indices[1], spinning_friction=0.001)
 
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
@@ -56,7 +58,7 @@ class Panda(PyBulletRobot):
             ee_displacement = action[:3]
             target_arm_angles = self.ee_displacement_to_target_arm_angles(ee_displacement)
         else:
-            arm_joint_ctrl = action[:7]
+            arm_joint_ctrl = action[:6]
             target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
 
         if self.block_gripper:
@@ -66,7 +68,9 @@ class Panda(PyBulletRobot):
             fingers_width = self.get_fingers_width()
             target_fingers_width = fingers_width + fingers_ctrl
 
-        target_angles = np.concatenate((target_arm_angles, [target_fingers_width / 2, target_fingers_width / 2]))
+        # target_angles = np.concatenate((target_arm_angles, target_fingers_width))
+        # blocking the control of gripper
+        target_angles = target_arm_angles
         self.control_joints(target_angles=target_angles)
 
     def ee_displacement_to_target_arm_angles(self, ee_displacement: np.ndarray) -> np.ndarray:
@@ -76,7 +80,7 @@ class Panda(PyBulletRobot):
             ee_displacement (np.ndarray): End-effector displacement, as (dx, dy, dy).
 
         Returns:
-            np.ndarray: Target arm angles, as the angles of the 7 arm joints.
+            np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
         ee_displacement = ee_displacement[:3] * 0.05  # limit maximum change in position
         # get the current position and the target position
@@ -88,7 +92,7 @@ class Panda(PyBulletRobot):
         target_arm_angles = self.inverse_kinematics(
             link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
         )
-        target_arm_angles = target_arm_angles[:7]  # remove fingers angles
+        target_arm_angles = target_arm_angles[:6]  # remove fingers angles
         return target_arm_angles
 
     def arm_joint_ctrl_to_target_arm_angles(self, arm_joint_ctrl: np.ndarray) -> np.ndarray:
@@ -102,7 +106,7 @@ class Panda(PyBulletRobot):
         """
         arm_joint_ctrl = arm_joint_ctrl * 0.05  # limit maximum change in position
         # get the current position and the target position
-        current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(7)])
+        current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(6)])
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl
         return target_arm_angles
 

@@ -1,7 +1,7 @@
 import os
 
 from UR_gym.envs.robots.env import ClutteredPushGrasp
-from UR_gym.envs.robots.robot import UR5Robotiq85
+from UR_gym.envs.robots.UR5_old import UR5Robotiq85
 from UR_gym.envs.robots.utilities import YCBModels, Camera
 
 

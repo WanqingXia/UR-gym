@@ -12,8 +12,8 @@ for reward_type in ["sparse", "dense"]:
         kwargs = {"reward_type": reward_type, "control_type": control_type}
 
         register(
-            id="URReach{}{}-v1".format(control_suffix, reward_suffix),
-            entry_point="UR_gym.envs:URReachEnv",
+            id="UR5Reach{}{}-v1".format(control_suffix, reward_suffix),
+            entry_point="UR_gym.envs:UR5ReachEnv",
             kwargs=kwargs,
             max_episode_steps=50,
         )

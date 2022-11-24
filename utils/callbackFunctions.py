@@ -1,16 +1,8 @@
-#!/usr/bin/env python3
-# !\file
-#
-# \author  Wanqing Xia wxia612@aucklanduni.ac.nz
-# \date    2022-11-09
-#
-#
-# ---------------------------------------------------------------------
 import numpy as np
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
 
-from visdom_utils import VisdomLinePlotter
+from .visdom_utils import VisdomLinePlotter
 
 
 class VisdomCallback(BaseCallback):
