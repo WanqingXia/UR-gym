@@ -609,6 +609,7 @@ class PyBullet:
         width: float,
         height: float,
         x_offset: float = 0.0,
+        z_offset: float = 0.0,
         lateral_friction: Optional[float] = None,
         spinning_friction: Optional[float] = None,
     ) -> None:
@@ -628,9 +629,42 @@ class PyBullet:
             body_name="table",
             half_extents=np.array([length, width, height]) / 2,
             mass=0.0,
-            position=np.array([x_offset, 0.0, -height / 2]),
+            position=np.array([x_offset, 0.0, z_offset - height / 2]),
             specular_color=np.zeros(3),
             rgba_color=np.array([0.95, 0.95, 0.95, 1]),
+            lateral_friction=lateral_friction,
+            spinning_friction=spinning_friction,
+        )
+
+    def create_track(
+        self,
+        length: float,
+        width: float,
+        height: float,
+        x_offset: float = 0.0,
+        z_offset: float = 0.0,
+        lateral_friction: Optional[float] = None,
+        spinning_friction: Optional[float] = None,
+    ) -> None:
+        """Create a fixed table. Top is z=0, centered in y.
+
+        Args:
+            length (float): The length of the track (x direction).
+            width (float): The width of the track (y direction)
+            height (float): The height of the track.
+            x_offset (float, optional): The offet in the x direction.
+            lateral_friction (float or None, optional): Lateral friction. If None, use the default pybullet
+                value. Defaults to None.
+            spinning_friction (float or None, optional): Spinning friction. If None, use the default pybullet
+                value. Defaults to None.
+        """
+        self.create_box(
+            body_name="track",
+            half_extents=np.array([length, width, height]) / 2,
+            mass=0.0,
+            position=np.array([x_offset, 0.0, z_offset - height / 2]),
+            specular_color=np.zeros(3),
+            rgba_color=np.array([0.2, 0.3, 0.9, 0.8]),
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
         )

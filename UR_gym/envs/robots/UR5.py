@@ -42,8 +42,7 @@ class UR5(PyBulletRobot):
         )
 
         self.fingers_indices = np.array([9])
-        self.neutral_joint_values = np.array([0.0, -1.5446774605904932, 1.343946009733127,
-                                              -1.3708613585093699, -1.5707970583733368, 0.0009377758247187636])
+        self.neutral_joint_values = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.ee_link = 6  # the id of ee_link
         self.gripper_range = [0, 0.085]
         # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
