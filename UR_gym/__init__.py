@@ -23,3 +23,10 @@ for reward_type in ["sparse", "dense"]:
             kwargs=kwargs,
             max_episode_steps=50,
         )
+
+        register(
+            id="UR5IAIRegReach{}{}-v1".format(control_suffix, reward_suffix),
+            entry_point="UR_gym.envs:UR5IAIRegReachEnv",
+            kwargs=kwargs,
+            max_episode_steps=50,
+        )

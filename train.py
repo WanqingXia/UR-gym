@@ -21,7 +21,7 @@ def sig_handler(signal, frame):
 signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Create environment
-env = gymnasium.make("UR5IAIReachJointsDense-v1", render=True)
+env = gymnasium.make("UR5IAIRegReachJointsDense-v1", render=True)
 
 # ---------------- Create log
 log_dir = "./RobotLearn/saved_models" + datetime.now().strftime("_%m_%d_%H:%M")
@@ -35,7 +35,7 @@ callback_save_best_model = EvalCallback(env, best_model_save_path=log_dir, log_p
 callback_list = CallbackList([callback_visdom, callback_save_best_model])
 
 # ---------------- Create model
-model = SAC(policy="MultiInputPolicy", env=env, verbose=1)
+model = DDPG(policy="MultiInputPolicy", env=env, verbose=1)
 
 # ---------------- Train
-model.learn(total_timesteps=100000, callback=callback_list)
+model.learn(total_timesteps=1000000, callback=callback_list)
