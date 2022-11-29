@@ -1,5 +1,5 @@
 from typing import Optional
-
+import os
 import numpy as np
 from gymnasium import spaces
 
@@ -34,7 +34,7 @@ class UR5(PyBulletRobot):
         super().__init__(
             sim,
             body_name="UR5",
-            file_name="/home/wxia612/UR-gym/UR_gym/envs/robots/urdf/ur5.urdf",
+            file_name= os.getcwd() + "/UR_gym/envs/robots/urdf/ur5.urdf",
             base_position=base_position,
             action_space=action_space,
             joint_indices=np.array([0, 1, 2, 3, 4, 5]),  # 1-6: robot joints, 9: gripper finger
@@ -171,7 +171,7 @@ class UR5Reg(PyBulletRobot):
         super().__init__(
             sim,
             body_name="UR5",
-            file_name="/home/wxia612/UR-gym/UR_gym/envs/robots/urdf/ur5.urdf",
+            file_name=os.getcwd() + "/UR_gym/envs/robots/urdf/ur5.urdf",
             base_position=base_position,
             action_space=action_space,
             joint_indices=np.array([0, 1, 2, 3, 4, 5]),  # 1-6: robot joints, 9: gripper finger
