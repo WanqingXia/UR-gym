@@ -149,8 +149,9 @@ class ReachIAIReg(Task):
         self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
         self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
         self.action_weight = -1
-        self.collision_weight = -2
+        self.collision_weight = -20
         self.distance_weight = -20
+        self.collision = False
         with self.sim.no_rendering():
             self._create_scene()
             self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
@@ -167,6 +168,7 @@ class ReachIAIReg(Task):
             position=np.zeros(3),
             rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )
+        # self.sim.create_ab()
         # self.sim.create_sphere(
         #     body_name="ori",
         #     radius=0.02,
@@ -185,6 +187,7 @@ class ReachIAIReg(Task):
 
     def reset(self) -> None:
         self.goal = self._sample_goal()
+        self.collision = False
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
 
     def _sample_goal(self) -> np.ndarray:
@@ -196,6 +199,9 @@ class ReachIAIReg(Task):
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=np.bool8)
 
+    def check_collision(self) -> bool:
+        self.collision = self.sim.check_collision()
+
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
         d = distance(achieved_goal, desired_goal)
@@ -204,4 +210,5 @@ class ReachIAIReg(Task):
         else:
             reward += d * self.distance_weight
             reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
+            reward += self.collision_weight if self.collision else 0
             return reward.astype(np.float32)

@@ -192,6 +192,6 @@ class UR5(RobotBase):
 
 if __name__ == "__main__":
     physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
-    robot = UR5([0, 0, 0], [0, 0, 0])
+    robot = UR5Robotiq85([0, 0, 0], [0, 0, 0])
     robot.load()
     wait = 1

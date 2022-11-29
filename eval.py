@@ -16,11 +16,11 @@ def sig_handler(signal, frame):
 signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Create environment
-env = gymnasium.make("UR5IAIReachJointsDense-v1", render=True)
+env = gymnasium.make("UR5IAIRegReachJointsDense-v1", render=True)
 
 # ----------------- Load the pre-trained model from files
 print("load the pre-trained model from files")
-model = SAC.load("RobotLearn/UR5IAI/best_model", env=env)
+model = DDPG.load("RobotLearn/IAIReg_DDPG/best_model", env=env)
 
 # ------------------ Evaluate the policy
 mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10, render=True)

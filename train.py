@@ -38,4 +38,5 @@ callback_list = CallbackList([callback_visdom, callback_save_best_model])
 model = DDPG(policy="MultiInputPolicy", env=env, verbose=1)
 
 # ---------------- Train
-model.learn(total_timesteps=1000000, callback=callback_list)
+model.learn(total_timesteps=500000, callback=callback_list)
+# model.learn(total_timesteps=500000)

@@ -22,7 +22,8 @@ class PyBullet:
             Defaults to np.array([223, 54, 45]).
     """
 
-    def __init__(self, render: bool = False, n_substeps: int = 20, background_color: Optional[np.ndarray] = None) -> None:
+    def __init__(self, render: bool = False, n_substeps: int = 20,
+                 background_color: Optional[np.ndarray] = None) -> None:
         background_color = background_color if background_color is not None else np.array([223.0, 54.0, 45.0])
         self.background_color = background_color.astype(np.float32) / 255
         options = "--background_color_red={} \
@@ -83,15 +84,15 @@ class PyBullet:
         self.physics_client.removeState(state_id)
 
     def render(
-        self,
-        mode: str = "human",
-        width: int = 720,
-        height: int = 480,
-        target_position: Optional[np.ndarray] = None,
-        distance: float = 1.4,
-        yaw: float = 45,
-        pitch: float = -30,
-        roll: float = 0,
+            self,
+            mode: str = "human",
+            width: int = 720,
+            height: int = 480,
+            target_position: Optional[np.ndarray] = None,
+            distance: float = 1.4,
+            yaw: float = 45,
+            pitch: float = -30,
+            roll: float = 0,
     ) -> Optional[np.ndarray]:
         """Render.
 
@@ -342,6 +343,42 @@ class PyBullet:
             forces=forces,
         )
 
+    def check_collision(self):
+        """Check the collision between workbench and UR5
+
+        Possible collisions: table with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
+                             track with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
+                             collision margin 1cm (0.01m)
+        Print: link name that collides
+        Return: collision (bool): Whether collision is occurred
+        """
+        collision = False
+        for table_and_track in [self._bodies_idx["table"], self._bodies_idx["track"]]:
+            for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
+                if link_num == 0 or 6:
+                    pass  # link 0 and 6 of robot can never collide
+                else:
+                    info = p.getClosestPoints(self._bodies_idx["UR5"], table_and_track, linkIndexA=link_num,
+                                              distance=0.01)
+                    if info:  # distance smaller than 0.01m, collision occurs
+                        collision = True
+                        linkA = "None"
+                        if info[3] == 1:
+                            linkA = "upper_arm_link"
+                        elif info[3] == 2:
+                            linkA = "fore_arm_link"
+                        elif info[3] == 3:
+                            linkA = "wrist_1_link"
+                        elif info[3] == 4:
+                            linkA = "wrist_2_link"
+                        elif info[3] == 5:
+                            linkA = "wrist_3_link"
+
+                        linkB = "Table" if info[2] == 3 else "Track"
+                        print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[8])
+
+        return collision
+
     def inverse_kinematics(self, body: str, link: int, position: np.ndarray, orientation: np.ndarray) -> np.ndarray:
         """Compute the inverse kinematics and return the new joint state.
 
@@ -394,17 +431,17 @@ class PyBullet:
         self._bodies_idx[body_name] = self.physics_client.loadURDF(**kwargs)
 
     def create_box(
-        self,
-        body_name: str,
-        half_extents: np.ndarray,
-        mass: float,
-        position: np.ndarray,
-        rgba_color: Optional[np.ndarray] = None,
-        specular_color: Optional[np.ndarray] = None,
-        ghost: bool = False,
-        lateral_friction: Optional[float] = None,
-        spinning_friction: Optional[float] = None,
-        texture: Optional[str] = None,
+            self,
+            body_name: str,
+            half_extents: np.ndarray,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
+            texture: Optional[str] = None,
     ) -> None:
         """Create a box.
 
@@ -447,17 +484,17 @@ class PyBullet:
             self.physics_client.changeVisualShape(self._bodies_idx[body_name], -1, textureUniqueId=texture_uid)
 
     def create_cylinder(
-        self,
-        body_name: str,
-        radius: float,
-        height: float,
-        mass: float,
-        position: np.ndarray,
-        rgba_color: Optional[np.ndarray] = None,
-        specular_color: Optional[np.ndarray] = None,
-        ghost: bool = False,
-        lateral_friction: Optional[float] = None,
-        spinning_friction: Optional[float] = None,
+            self,
+            body_name: str,
+            radius: float,
+            height: float,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
     ) -> None:
         """Create a cylinder.
 
@@ -497,16 +534,16 @@ class PyBullet:
         )
 
     def create_sphere(
-        self,
-        body_name: str,
-        radius: float,
-        mass: float,
-        position: np.ndarray,
-        rgba_color: Optional[np.ndarray] = None,
-        specular_color: Optional[np.ndarray] = None,
-        ghost: bool = False,
-        lateral_friction: Optional[float] = None,
-        spinning_friction: Optional[float] = None,
+            self,
+            body_name: str,
+            radius: float,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
     ) -> None:
         """Create a sphere.
 
@@ -544,16 +581,16 @@ class PyBullet:
         )
 
     def _create_geometry(
-        self,
-        body_name: str,
-        geom_type: int,
-        mass: float = 0.0,
-        position: Optional[np.ndarray] = None,
-        ghost: bool = False,
-        lateral_friction: Optional[float] = None,
-        spinning_friction: Optional[float] = None,
-        visual_kwargs: Dict[str, Any] = {},
-        collision_kwargs: Dict[str, Any] = {},
+            self,
+            body_name: str,
+            geom_type: int,
+            mass: float = 0.0,
+            position: Optional[np.ndarray] = None,
+            ghost: bool = False,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
+            visual_kwargs: Dict[str, Any] = {},
+            collision_kwargs: Dict[str, Any] = {},
     ) -> None:
         """Create a geometry.
 
@@ -604,14 +641,14 @@ class PyBullet:
         )
 
     def create_table(
-        self,
-        length: float,
-        width: float,
-        height: float,
-        x_offset: float = 0.0,
-        z_offset: float = 0.0,
-        lateral_friction: Optional[float] = None,
-        spinning_friction: Optional[float] = None,
+            self,
+            length: float,
+            width: float,
+            height: float,
+            x_offset: float = 0.0,
+            z_offset: float = 0.0,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
     ) -> None:
         """Create a fixed table. Top is z=0, centered in y.
 
@@ -637,14 +674,14 @@ class PyBullet:
         )
 
     def create_track(
-        self,
-        length: float,
-        width: float,
-        height: float,
-        x_offset: float = 0.0,
-        z_offset: float = 0.0,
-        lateral_friction: Optional[float] = None,
-        spinning_friction: Optional[float] = None,
+            self,
+            length: float,
+            width: float,
+            height: float,
+            x_offset: float = 0.0,
+            z_offset: float = 0.0,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
     ) -> None:
         """Create a fixed table. Top is z=0, centered in y.
 
@@ -667,6 +704,16 @@ class PyBullet:
             rgba_color=np.array([0.2, 0.3, 0.9, 0.8]),
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
+        )
+
+    def create_ab(self):
+        self.create_box(
+            body_name="a",
+            half_extents=np.array([0.1, 0.1, 0.1]) / 2,
+            mass=0.0,
+            position=np.array([0.0, 0.0, 0.5]),
+            specular_color=np.zeros(3),
+            rgba_color=np.array([0.2, 0.3, 0.9, 0.8]),
         )
 
     def set_lateral_friction(self, body: str, link: int, lateral_friction: float) -> None:
