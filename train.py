@@ -21,7 +21,7 @@ def sig_handler(signal, frame):
 signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Create environment
-env = gymnasium.make("UR5IAIRegReachJointsDense-v1", render=True)
+env = gymnasium.make("UR5IAIOriReachJointsDense-v1", render=True)
 
 # ---------------- Create log
 log_dir = "./RobotLearn/saved_models" + datetime.now().strftime("_%m_%d_%H:%M")

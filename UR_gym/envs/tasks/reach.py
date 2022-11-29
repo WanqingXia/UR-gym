@@ -1,9 +1,9 @@
 from typing import Any, Dict
-
+import os
 import numpy as np
-
+from scipy.spatial.transform import Rotation as R
 from UR_gym.envs.core import Task
-from UR_gym.utils import distance
+from UR_gym.utils import distance, angle_distance
 
 
 class Reach(Task):
@@ -168,15 +168,6 @@ class ReachIAIReg(Task):
             position=np.zeros(3),
             rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )
-        # self.sim.create_ab()
-        # self.sim.create_sphere(
-        #     body_name="ori",
-        #     radius=0.02,
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([0.6, 0.4, 0.8]),
-        #     rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
-        # )
 
     def get_obs(self) -> np.ndarray:
         return np.array([])  # no task-specific observation
@@ -209,6 +200,87 @@ class ReachIAIReg(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             reward += d * self.distance_weight
+            reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
+            reward += self.collision_weight if self.collision else 0
+            return reward.astype(np.float32)
+
+
+class ReachIAIOri(Task):
+    def __init__(
+        self,
+        sim,
+        robot,
+        reward_type="dense",
+        distance_threshold=0.05,
+        angular_distance_threshold=0.05,
+        goal_range=0.8,
+    ) -> None:
+        super().__init__(sim)
+        self.reward_type = reward_type
+        self.distance_threshold = distance_threshold
+        self.angular_distance_threshold = angular_distance_threshold
+        self.robot = robot
+        self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
+        self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
+        self.action_weight = -1
+        self.collision_weight = -20
+        self.distance_weight = -20
+        self.collision = False
+        with self.sim.no_rendering():
+            self._create_scene()
+            self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
+
+    def _create_scene(self) -> None:
+        self.sim.create_plane(z_offset=-1.04)
+        self.sim.create_table(length=1.1, width=1.8, height=0.92, x_offset=0.5, z_offset=-0.12)
+        self.sim.create_track(length=0.2, width=1.1, height=0.12, x_offset=0.0, z_offset=0.0)
+        self.sim.create_box(
+            body_name="target",
+            half_extents=np.ones(3) * 0.05 / 2,
+            mass=0.0,
+            ghost=True,
+            position=np.array([0.0, 0.0, 1.0]),
+            rgba_color=np.array([1.0, 1.0, 1.0, 0.5]),
+            texture=os.getcwd() + "/UR_gym/assets/colored_cube.png",
+        )
+
+    def get_obs(self) -> np.ndarray:
+        return np.array([])  # no task-specific observation
+
+    def get_achieved_goal(self) -> np.ndarray:
+        ee_position = np.array(self.robot.get_ee_position())
+        ee_orientation = np.array(self.robot.get_ee_orientation())
+        return np.concatenate((ee_position, ee_orientation))
+
+    def reset(self) -> None:
+        self.goal = self._sample_goal()
+        # print(self.goal)
+        self.collision = False
+        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+
+    def _sample_goal(self) -> np.ndarray:
+        """Randomize goal."""
+        goal_pos = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
+        goal_rot = R.random().as_quat()
+        return np.concatenate((goal_pos, goal_rot))
+
+    def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
+        d = distance(achieved_goal[:3], desired_goal[:3])
+        dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        return np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
+
+    def check_collision(self) -> bool:
+        self.collision = self.sim.check_collision()
+
+    def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        reward = np.float32(0.0)
+        d = distance(achieved_goal[:3], desired_goal[:3])
+        dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        if self.reward_type == "sparse":
+            return -np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
+        else:
+            # print("d ", d, "dr ", dr)
+            reward += (d + dr) * self.distance_weight
             reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
             reward += self.collision_weight if self.collision else 0
             return reward.astype(np.float32)

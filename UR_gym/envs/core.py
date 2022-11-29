@@ -100,6 +100,28 @@ class PyBulletRobot(ABC):
         """
         return self.sim.get_link_velocity(self.body_name, link)
 
+    def get_link_orientation(self, link: int) -> np.ndarray:
+        """Returns the orientation of a link as (x, y, z, w)
+
+        Args:
+            link (int): The link index.
+
+        Returns:
+            np.ndarray: Rotation as (x, y, z, w)
+        """
+        return self.sim.get_link_orientation(self.body_name, link)
+
+    def get_link_angular_velocity(self, link: int) -> np.ndarray:
+        """Returns the velocity of a link as (wx, wy, wz)
+
+        Args:
+            link (int): The link index.
+
+        Returns:
+            np.ndarray: Angular Velocity as (wx, wy, wz)
+        """
+        return self.sim.get_link_angular_velocity(self.body_name, link)
+
     def get_joint_angle(self, joint: int) -> float:
         """Returns the angle of a joint
 
