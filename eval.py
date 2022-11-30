@@ -20,7 +20,7 @@ env = gymnasium.make("UR5IAIOriReachJointsDense-v1", render=True)
 
 # ----------------- Load the pre-trained model from files
 print("load the pre-trained model from files")
-model = DDPG.load("RobotLearn/UR5_Ori/best_model", env=env)
+model = DDPG.load("RobotLearn/UR5_Ori_DDPG/best_model", env=env)
 
 # ------------------ Evaluate the policy
 mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10, render=True)

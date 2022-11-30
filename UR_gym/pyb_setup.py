@@ -668,7 +668,7 @@ class PyBullet:
             mass=0.0,
             position=np.array([x_offset, 0.0, z_offset - height / 2]),
             specular_color=np.zeros(3),
-            rgba_color=np.array([0.95, 0.95, 0.95, 1]),
+            rgba_color=np.array([0.3, 0.3, 0.8, 1]),
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
         )
@@ -701,7 +701,7 @@ class PyBullet:
             mass=0.0,
             position=np.array([x_offset, 0.0, z_offset - height / 2]),
             specular_color=np.zeros(3),
-            rgba_color=np.array([0.2, 0.3, 0.9, 0.8]),
+            rgba_color=np.array([0.5, 0.5, 0.9, 1.0]),
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
         )

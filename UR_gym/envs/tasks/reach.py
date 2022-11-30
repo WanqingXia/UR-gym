@@ -225,6 +225,7 @@ class ReachIAIOri(Task):
         self.action_weight = -1
         self.collision_weight = -20
         self.distance_weight = -20
+        self.orientation_weight = -5
         self.collision = False
         with self.sim.no_rendering():
             self._create_scene()
@@ -240,7 +241,7 @@ class ReachIAIOri(Task):
             mass=0.0,
             ghost=True,
             position=np.array([0.0, 0.0, 1.0]),
-            rgba_color=np.array([1.0, 1.0, 1.0, 0.5]),
+            rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
             texture=os.getcwd() + "/UR_gym/assets/colored_cube.png",
         )
 
@@ -262,11 +263,15 @@ class ReachIAIOri(Task):
         """Randomize goal."""
         goal_pos = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
         goal_rot = R.random().as_quat()
-        return np.concatenate((goal_pos, goal_rot))
+
+        return np.concatenate((self.robot.get_ee_position(), self.robot.get_ee_orientation()))
+        # return np.concatenate((goal_pos, goal_rot))
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal[:3], desired_goal[:3])
         dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        if d < self.distance_threshold and dr < self.angular_distance_threshold:
+            print("Succeed!")
         return np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
@@ -279,8 +284,8 @@ class ReachIAIOri(Task):
         if self.reward_type == "sparse":
             return -np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
         else:
-            # print("d ", d, "dr ", dr)
-            reward += (d + dr) * self.distance_weight
+            reward += d * self.distance_weight
+            reward += dr * self.orientation_weight
             reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
             reward += self.collision_weight if self.collision else 0
             return reward.astype(np.float32)
