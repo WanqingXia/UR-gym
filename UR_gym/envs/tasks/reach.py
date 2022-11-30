@@ -213,19 +213,19 @@ class ReachIAIOri(Task):
         reward_type="dense",
         distance_threshold=0.05,
         angular_distance_threshold=0.05,
-        goal_range=0.8,
+        goal_range=0.4,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.angular_distance_threshold = angular_distance_threshold
         self.robot = robot
-        self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
-        self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
+        self.goal_range_low = np.array([0.3, -0.4, 0.2])  # table width, table length, height
+        self.goal_range_high = np.array([0.6, 0.4, 0.6])
         self.action_weight = -1
         self.collision_weight = -20
         self.distance_weight = -20
-        self.orientation_weight = -5
+        self.orientation_weight = -4
         self.collision = False
         with self.sim.no_rendering():
             self._create_scene()
@@ -246,7 +246,7 @@ class ReachIAIOri(Task):
         )
 
     def get_obs(self) -> np.ndarray:
-        return np.array([])  # no task-specific observation
+        return np.array(self.goal)
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.robot.get_ee_position())
@@ -261,11 +261,11 @@ class ReachIAIOri(Task):
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
-        goal_pos = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
-        goal_rot = R.random().as_quat()
+        goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
+        goal_rot = np.array(R.random().as_quat())
 
-        return np.concatenate((self.robot.get_ee_position(), self.robot.get_ee_orientation()))
-        # return np.concatenate((goal_pos, goal_rot))
+        # return np.concatenate((self.robot.get_ee_position(), self.robot.get_ee_orientation()))
+        return np.concatenate((goal_pos, goal_rot))
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal[:3], desired_goal[:3])
