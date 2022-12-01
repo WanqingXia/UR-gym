@@ -28,3 +28,11 @@ def angle_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     assert a.shape == b.shape
     dist = 1 - np.inner(a, b) ** 2
     return dist
+
+    # code useful for HER
+    # if len(a) == 4:
+    #     dist = 1 - np.inner(a, b) ** 2
+    #     return dist
+    # else:
+    #     dist = [1 - np.inner(row[0], row[1]) ** 2 for row in zip(a, b)]
+    #     return np.array(dist)

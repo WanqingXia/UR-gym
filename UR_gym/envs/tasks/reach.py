@@ -289,3 +289,22 @@ class ReachIAIOri(Task):
             reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
             reward += self.collision_weight if self.collision else 0
             return reward.astype(np.float32)
+        
+        # Code useful for HER
+        # if len(achieved_goal) == 7:
+        #     d = distance(achieved_goal[:3], desired_goal[:3])
+        #     dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        #     reward += d * self.distance_weight
+        #     reward += dr * self.orientation_weight
+        #     reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
+        #     reward += self.collision_weight if self.collision else 0
+        #     return reward.astype(np.float32)
+        # else:
+        #     d = distance(achieved_goal[:, :3], desired_goal[:, :3])
+        #     dr = angle_distance(achieved_goal[:, 3:], desired_goal[:, 3:])
+        #     reward += d * self.distance_weight
+        #     reward += dr * self.orientation_weight
+        #     # reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
+        #     # reward += self.collision_weight if self.collision else 0
+        #     return reward.astype(np.float32)
+
