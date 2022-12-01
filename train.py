@@ -23,19 +23,23 @@ signal.signal(signal.SIGINT, sig_handler)
 # ---------------- Create environment
 env = gymnasium.make("UR5IAIOriReachJointsDense-v1", render=True)
 
-# ---------------- Create log
-log_dir = "./RobotLearn/saved_models" + datetime.now().strftime("_%m_%d_%H:%M")
-os.makedirs(log_dir, exist_ok=True)
+# ---------------- Create model and log
+# model = SAC(policy="MultiInputPolicy", env=env, verbose=1)
+# log_dir = "./RobotLearn/" + datetime.now().strftime("_%m_%d_%H:%M")
+# os.makedirs(log_dir, exist_ok=True)
+# env = Monitor(env, log_dir)
+
+# ---------------- Load model and log
+model = SAC.load("./RobotLearn/UR5_SAC_Ori/best_model", env=env)
+log_dir = "./RobotLearn/UR5_SAC_Ori"
 env = Monitor(env, log_dir)
+
 
 # ---------------- Callback functions
 callback_visdom = VisdomCallback(name='UR-gym', check_freq=10, log_dir=log_dir)
-callback_save_best_model = EvalCallback(env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=500,
-                                        deterministic=True, render=False)
+callback_save_best_model = EvalCallback(env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=1000,
+                                        deterministic=True, n_eval_episodes=100, render=False)
 callback_list = CallbackList([callback_visdom, callback_save_best_model])
-
-# ---------------- Create model
-model = SAC(policy="MultiInputPolicy", env=env, verbose=1)
 
 # ---------------- Train
 model.learn(total_timesteps=1000000, callback=callback_list)

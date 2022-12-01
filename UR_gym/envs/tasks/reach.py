@@ -220,8 +220,8 @@ class ReachIAIOri(Task):
         self.distance_threshold = distance_threshold
         self.angular_distance_threshold = angular_distance_threshold
         self.robot = robot
-        self.goal_range_low = np.array([0.3, -0.4, 0.2])  # table width, table length, height
-        self.goal_range_high = np.array([0.6, 0.4, 0.6])
+        self.goal_range_low = np.array([0.4, -0.4, 0.2])  # table width, table length, height
+        self.goal_range_high = np.array([0.7, 0.4, 0.6])
         self.action_weight = -1
         self.collision_weight = -20
         self.distance_weight = -20

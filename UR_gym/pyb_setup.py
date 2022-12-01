@@ -360,6 +360,7 @@ class PyBullet:
                 else:
                     info = p.getClosestPoints(self._bodies_idx["UR5"], table_and_track, linkIndexA=link_num,
                                               distance=0.01)
+                    print(info)
                     if info:  # distance smaller than 0.01m, collision occurs
                         collision = True
                         linkA = "None"
