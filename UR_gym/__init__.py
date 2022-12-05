@@ -11,29 +11,29 @@ for reward_type in ["sparse", "dense"]:
         kwargs = {"reward_type": reward_type, "control_type": control_type}
 
         register(
-            id="UR5Reach{}{}-v1".format(control_suffix, reward_suffix),
-            entry_point="UR_gym.envs:UR5ReachEnv",
-            kwargs=kwargs,
-            max_episode_steps=50,
-        )
-
-        register(
             id="UR5IAIReach{}{}-v1".format(control_suffix, reward_suffix),
             entry_point="UR_gym.envs:UR5IAIReachEnv",
             kwargs=kwargs,
-            max_episode_steps=50,
+            max_episode_steps=100,
         )
 
         register(
-            id="UR5IAIRegReach{}{}-v1".format(control_suffix, reward_suffix),
-            entry_point="UR_gym.envs:UR5IAIRegReachEnv",
+            id="UR5RegReach{}{}-v1".format(control_suffix, reward_suffix),
+            entry_point="UR_gym.envs:UR5RegReachEnv",
             kwargs=kwargs,
-            max_episode_steps=50,
+            max_episode_steps=100,
         )
 
         register(
-            id="UR5IAIOriReach{}{}-v1".format(control_suffix, reward_suffix),
-            entry_point="UR_gym.envs:UR5IAIOriReachEnv",
+            id="UR5OriReach{}{}-v1".format(control_suffix, reward_suffix),
+            entry_point="UR_gym.envs:UR5OriReachEnv",
             kwargs=kwargs,
-            max_episode_steps=50,
+            max_episode_steps=100,
+        )
+
+        register(
+            id="UR5ObsReach{}{}-v1".format(control_suffix, reward_suffix),
+            entry_point="UR_gym.envs:UR5ObsReachEnv",
+            kwargs=kwargs,
+            max_episode_steps=100,
         )
