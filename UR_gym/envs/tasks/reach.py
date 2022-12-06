@@ -11,16 +11,16 @@ class ReachIAI(Task):
         self,
         sim,
         get_ee_position,
-        reward_type="dense",
         distance_threshold=0.05,
         goal_range=0.8,
     ) -> None:
         super().__init__(sim)
-        self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.get_ee_position = get_ee_position
         self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
         self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
+        self.collision = False
+
         with self.sim.no_rendering():
             self._create_scene()
             self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
@@ -66,12 +66,12 @@ class ReachIAI(Task):
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=np.bool8)
 
+    def check_collision(self) -> bool:
+        self.collision = False
+
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
-        if self.reward_type == "sparse":
-            return -np.array(d > self.distance_threshold, dtype=np.float32)
-        else:
-            return -d.astype(np.float32)
+        return -d.astype(np.float32)
 
 
 class ReachReg(Task):
@@ -79,12 +79,10 @@ class ReachReg(Task):
         self,
         sim,
         robot,
-        reward_type="dense",
         distance_threshold=0.05,
         goal_range=0.8,
     ) -> None:
         super().__init__(sim)
-        self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.robot = robot
         self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
@@ -138,16 +136,14 @@ class ReachReg(Task):
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
         d = distance(achieved_goal, desired_goal)
-        if self.reward_type == "sparse":
-            return -np.array(d > self.distance_threshold, dtype=np.float32)
+
+        if d <= self.delta:
+            reward += 0.5 * np.square(d) * self.distance_weight
         else:
-            if d <= self.delta:
-                reward += 0.5 * np.square(d) * self.distance_weight
-            else:
-                reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
-            reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-            reward += self.collision_weight if self.collision else 0
-            return reward.astype(np.float32)
+            reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+        reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        reward += self.collision_weight if self.collision else 0
+        return reward.astype(np.float32)
 
 
 class ReachOri(Task):
@@ -155,13 +151,10 @@ class ReachOri(Task):
         self,
         sim,
         robot,
-        reward_type="dense",
         distance_threshold=0.05,
         angular_distance_threshold=0.05,
-        goal_range=0.4,
     ) -> None:
         super().__init__(sim)
-        self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.angular_distance_threshold = angular_distance_threshold
         self.robot = robot
@@ -227,22 +220,22 @@ class ReachOri(Task):
         reward = np.float32(0.0)
         d = distance(achieved_goal[:3], desired_goal[:3])
         dr = angle_distance(achieved_goal[3:], desired_goal[3:])
-        if self.reward_type == "sparse":
-            return -np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
+
+        """Distance Reward"""
+        if d <= self.delta:
+            reward += 0.5 * np.square(d) * self.distance_weight
         else:
-            if d <= self.delta:
-                reward += 0.5 * np.square(d) * self.distance_weight
-            else:
-                reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
-
-            if dr <= self.delta:
-                reward += 0.5 * np.square(dr) * self.orientation_weight
-            else:
-                reward += self.orientation_weight * self.delta * (np.abs(dr) - 0.5 * self.delta)
-
-            reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-            reward += self.collision_weight if self.collision else 0
-            return reward.astype(np.float32)
+            reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+        """Orientation Reward"""
+        if dr <= self.delta:
+            reward += 0.5 * np.square(dr) * self.orientation_weight
+        else:
+            reward += self.orientation_weight * self.delta * (np.abs(dr) - 0.5 * self.delta)
+        """Action Reward"""
+        reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        """Collision Reward"""
+        reward += self.collision_weight if self.collision else 0
+        return reward.astype(np.float32)
         
         # Code useful for HER
         # if len(achieved_goal) == 7:
@@ -268,12 +261,10 @@ class ReachObs(Task):
         self,
         sim,
         robot,
-        reward_type="dense",
         distance_threshold=0.05,
         goal_range=0.8,
     ) -> None:
         super().__init__(sim)
-        self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.robot = robot
         self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
@@ -347,10 +338,12 @@ class ReachObs(Task):
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
         d = distance(achieved_goal, desired_goal)
-        if self.reward_type == "sparse":
-            return -np.array(d > self.distance_threshold, dtype=np.float32)
+
+        if d <= self.delta:
+            reward += 0.5 * np.square(d) * self.distance_weight
         else:
-            reward += d * self.distance_weight
-            reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
-            reward += self.collision_weight if self.collision else 0
-            return reward.astype(np.float32)
+            reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+
+        reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        reward += self.collision_weight if self.collision else 0
+        return reward.astype(np.float32)

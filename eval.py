@@ -16,7 +16,7 @@ def sig_handler(signal, frame):
 
 signal.signal(signal.SIGINT, sig_handler)
 # ---------------- Create environment
-env = gymnasium.make("UR5IAIOriReachJointsDense-v1", render=True)
+env = gymnasium.make("UR5OriReach-v1", render=True)
 
 # ----------------- Load the pre-trained model from files
 print("load the pre-trained model from files")

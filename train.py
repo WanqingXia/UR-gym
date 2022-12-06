@@ -56,11 +56,11 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Create environment
 timesteps = 1000000
-env = gymnasium.make("UR5OriReachJointsDense-v1", render=True)
+env = gymnasium.make("UR5IAIReach-v1", render=True)
 
 # ---------------- Create model and log
 model = SAC(policy="MultiInputPolicy", learning_rate=cos_schedule(1e-3, timesteps, 1000),  env=env, verbose=1)
-log_dir = "./RobotLearn/" + datetime.now().strftime("SAC_Ori_trial2")
+log_dir = "./RobotLearn/" + datetime.now().strftime("SAC_Ori_t1")
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

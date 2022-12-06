@@ -14,8 +14,6 @@ class UR5(PyBulletRobot):
         sim (PyBullet): Simulation instance.
         block_gripper (bool, optional): Whether the gripper is blocked. Defaults to True.
         base_position (np.ndarray, optionnal): Position of the base of the robot, as (x, y, z). Defaults to (0, 0, 0).
-        control_type (str, optional): "ee" to control end-effector displacement or "joints" to control joint angles.
-            Defaults to "ee".
     """
 
     def __init__(
@@ -23,54 +21,33 @@ class UR5(PyBulletRobot):
         sim: PyBullet,
         block_gripper: bool = True,
         base_position: Optional[np.ndarray] = None,
-        control_type: str = "ee",
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
-        self.block_gripper = block_gripper
-        self.control_type = control_type
-        n_action = 3 if self.control_type == "ee" else 6  # control (x, y z) if "ee", else, control the 6 joints
-        n_action += 0 if self.block_gripper else 1
-        action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
+        action_space = spaces.Box(-1.0, 1.0, shape=(6,), dtype=np.float32)  # action space is 6 since 6 joints
         super().__init__(
             sim,
             body_name="UR5",
-            file_name= os.getcwd() + "/UR_gym/envs/robots/urdf/ur5.urdf",
+            file_name=os.getcwd() + "/UR_gym/envs/robots/urdf/ur5.urdf",
             base_position=base_position,
             action_space=action_space,
             joint_indices=np.array([0, 1, 2, 3, 4, 5]),  # 1-6: robot joints, 9: gripper finger
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.fingers_indices = np.array([9])
-        self.neutral_joint_values = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
         self.ee_link = 6  # the id of ee_link
+
+        """gripper related parameters, not used fro now"""
+        self.block_gripper = block_gripper
         self.gripper_range = [0, 0.085]
-        # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
-        # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[1], lateral_friction=1.0)
-        # self.sim.set_spinning_friction(self.body_name, self.fingers_indices[0], spinning_friction=0.001)
-        # self.sim.set_spinning_friction(self.body_name, self.fingers_indices[1], spinning_friction=0.001)
 
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        if self.control_type == "ee":
-            ee_displacement = action[:3]
-            target_arm_angles = self.ee_displacement_to_target_arm_angles(ee_displacement)
-        else:
-            arm_joint_ctrl = action[:6]
-            target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
 
-        if self.block_gripper:
-            target_fingers_width = 0
-        else:
-            fingers_ctrl = action[-1] * 0.2  # limit maximum change in position
-            fingers_width = self.get_fingers_width()
-            target_fingers_width = fingers_width + fingers_ctrl
-
-        # target_angles = np.concatenate((target_arm_angles, target_fingers_width))
-        # blocking the control of gripper
-        target_angles = target_arm_angles
-        self.control_joints(target_angles=target_angles)
+        arm_joint_ctrl = action[:6]
+        target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
+        self.control_joints(target_angles=target_arm_angles)
 
     def ee_displacement_to_target_arm_angles(self, ee_displacement: np.ndarray) -> np.ndarray:
         """Compute the target arm angles from the end-effector displacement.
@@ -113,12 +90,7 @@ class UR5(PyBulletRobot):
         # end-effector position and velocity
         ee_position = np.array(self.get_ee_position())
         ee_velocity = np.array(self.get_ee_velocity())
-        # fingers opening
-        if not self.block_gripper:
-            fingers_width = self.get_fingers_width()
-            observation = np.concatenate((ee_position, ee_velocity, [fingers_width]))
-        else:
-            observation = np.concatenate((ee_position, ee_velocity))
+        observation = np.concatenate((ee_position, ee_velocity))
         return observation
 
     def reset(self) -> None:
@@ -129,10 +101,9 @@ class UR5(PyBulletRobot):
         self.set_joint_angles(self.neutral_joint_values)
 
     def get_fingers_width(self) -> float:
+        """TODO: Implement this function if controlling gripper is needed"""
         """Get the distance between the fingers."""
-        finger1 = self.sim.get_joint_angle(self.body_name, self.fingers_indices[0])
-        finger2 = self.sim.get_joint_angle(self.body_name, self.fingers_indices[1])
-        return finger1 + finger2
+        return 0
 
     def get_ee_position(self) -> np.ndarray:
         """Returns the position of the end-effector as (x, y, z)"""
@@ -159,15 +130,9 @@ class UR5Reg(PyBulletRobot):
         sim: PyBullet,
         block_gripper: bool = True,
         base_position: Optional[np.ndarray] = None,
-        control_type: str = "ee",
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
-        self.block_gripper = block_gripper
-        self.control_type = control_type
-        n_action = 3 if self.control_type == "ee" else 6  # control (x, y z) if "ee", else, control the 6 joints
-        self.action = np.zeros(3) if self.control_type == "ee" else np.zeros(6)
-        n_action += 0 if self.block_gripper else 1
-        action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
+        action_space = spaces.Box(-1.0, 1.0, shape=(6,), dtype=np.float32)  # action space is 6 since 6 joints
         super().__init__(
             sim,
             body_name="UR5",
@@ -178,38 +143,21 @@ class UR5Reg(PyBulletRobot):
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.fingers_indices = np.array([9])
         self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
         self.ee_link = 6  # the id of ee_link
+        self.action = np.zeros(6)
+
+        """gripper related parameters, not used fro now"""
+        self.block_gripper = block_gripper
         self.gripper_range = [0, 0.085]
-        # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
-        # self.sim.set_lateral_friction(self.body_name, self.fingers_indices[1], lateral_friction=1.0)
-        # self.sim.set_spinning_friction(self.body_name, self.fingers_indices[0], spinning_friction=0.001)
-        # self.sim.set_spinning_friction(self.body_name, self.fingers_indices[1], spinning_friction=0.001)
 
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        if self.control_type == "ee":
-            ee_displacement = action[:3]
-            self.action = action[:3]
-            target_arm_angles = self.ee_displacement_to_target_arm_angles(ee_displacement)
-        else:
-            arm_joint_ctrl = action[:6]
-            self.action = action[:6]
-            target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
 
-        if self.block_gripper:
-            target_fingers_width = 0
-        else:
-            fingers_ctrl = action[-1] * 0.2  # limit maximum change in position
-            fingers_width = self.get_fingers_width()
-            target_fingers_width = fingers_width + fingers_ctrl
-
-        # target_angles = np.concatenate((target_arm_angles, target_fingers_width))
-        # blocking the control of gripper
-        target_angles = target_arm_angles
-        self.control_joints(target_angles=target_angles)
+        self.action = action[:6]
+        target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(self.action)
+        self.control_joints(target_angles=target_arm_angles)
 
     def ee_displacement_to_target_arm_angles(self, ee_displacement: np.ndarray) -> np.ndarray:
         """Compute the target arm angles from the end-effector displacement.
@@ -253,12 +201,7 @@ class UR5Reg(PyBulletRobot):
         ee_position = np.array(self.get_ee_position())
         ee_velocity = np.array(self.get_ee_velocity())
         joint_angles = np.array(self.get_joint_angles())
-        # fingers opening
-        if not self.block_gripper:
-            fingers_width = self.get_fingers_width()
-            observation = np.concatenate((ee_position, ee_velocity, [fingers_width]))
-        else:
-            observation = np.concatenate((ee_position, ee_velocity, joint_angles))
+        observation = np.concatenate((ee_position, ee_velocity, joint_angles))
         return observation
 
     def reset(self) -> None:
@@ -267,12 +210,6 @@ class UR5Reg(PyBulletRobot):
     def set_joint_neutral(self) -> None:
         """Set the robot to its neutral pose."""
         self.set_joint_angles(self.neutral_joint_values)
-
-    def get_fingers_width(self) -> float:
-        """Get the distance between the fingers."""
-        finger1 = self.sim.get_joint_angle(self.body_name, self.fingers_indices[0])
-        finger2 = self.sim.get_joint_angle(self.body_name, self.fingers_indices[1])
-        return finger1 + finger2
 
     def get_ee_position(self) -> np.ndarray:
         """Returns the position of the end-effector as (x, y, z)"""
@@ -301,8 +238,6 @@ class UR5Ori(PyBulletRobot):
         sim (PyBullet): Simulation instance.
         block_gripper (bool, optional): Whether the gripper is blocked. Defaults to True.
         base_position (np.ndarray, optionnal): Position of the base of the robot, as (x, y, z). Defaults to (0, 0, 0).
-        control_type (str, optional): "ee" to control end-effector displacement or "joints" to control joint angles.
-            Defaults to "ee".
     """
 
     def __init__(
@@ -310,15 +245,10 @@ class UR5Ori(PyBulletRobot):
         sim: PyBullet,
         block_gripper: bool = True,
         base_position: Optional[np.ndarray] = None,
-        control_type: str = "ee",
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
-        self.block_gripper = block_gripper
-        self.control_type = control_type
-        n_action = 3 if self.control_type == "ee" else 6  # control (x, y z) if "ee", else, control the 6 joints
-        self.action = np.zeros(3) if self.control_type == "ee" else np.zeros(6)
-        n_action += 0 if self.block_gripper else 1
-        action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
+        self.action = np.zeros(6)
+        action_space = spaces.Box(-1.0, 1.0, shape=(6,), dtype=np.float32)
         super().__init__(
             sim,
             body_name="UR5",
@@ -331,19 +261,13 @@ class UR5Ori(PyBulletRobot):
 
         self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
         self.ee_link = 6  # the id of ee_link
+        self.block_gripper = block_gripper
 
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        if self.control_type == "ee":
-            ee_displacement = action[:3]
-            self.action = action[:3]
-            target_arm_angles = self.ee_displacement_to_target_arm_angles(ee_displacement)
-        else:
-            arm_joint_ctrl = action[:6]
-            self.action = action[:6]
-            target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
-
+        self.action = action[:6]
+        target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(self.action)
         self.control_joints(target_angles=target_arm_angles)
 
     def ee_displacement_to_target_arm_angles(self, ee_displacement: np.ndarray) -> np.ndarray:
@@ -389,7 +313,6 @@ class UR5Ori(PyBulletRobot):
         ee_orientation = np.array(self.get_ee_orientation())
         ee_velocity = np.array(self.get_ee_velocity())
         joint_angles = np.array(self.get_joint_angles())
-
         observation = np.concatenate((ee_position, ee_orientation, ee_velocity, joint_angles))
         return observation
 
