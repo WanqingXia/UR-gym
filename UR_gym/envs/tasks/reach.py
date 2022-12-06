@@ -166,6 +166,7 @@ class ReachOri(Task):
         self.orientation_weight = -4
         self.delta = 0.2
         self.collision = False
+        self.link_dist = np.zeros(5)
         with self.sim.no_rendering():
             self._create_scene()
             self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
@@ -193,9 +194,8 @@ class ReachOri(Task):
         return np.concatenate((ee_position, ee_orientation))
 
     def reset(self) -> None:
-        self.goal = self._sample_goal()
-        # print(self.goal)
         self.collision = False
+        self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
     def _sample_goal(self) -> np.ndarray:
@@ -275,6 +275,8 @@ class ReachObs(Task):
         self.obstacle = 0
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
+        self.link_dist = np.zeros(5)
+
         with self.sim.no_rendering():
             self._create_scene()
             self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
@@ -295,7 +297,7 @@ class ReachObs(Task):
             body_name="obstacle",
             half_extents=np.ones(3) * 0.2 / 2,
             mass=0.0,
-            ghost=False,
+            ghost=True,
             position=np.array([0.0, 0.0, 1.0]),
             rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
         )
@@ -311,6 +313,7 @@ class ReachObs(Task):
         self.goal = self._sample_goal()
         self.obstacle = self._sample_obstacle()
         self.collision = False
+        self.link_dist = np.zeros(5)
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
         self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
 
@@ -333,7 +336,7 @@ class ReachObs(Task):
         return np.array(d < self.distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
-        self.collision = self.sim.check_collision()
+        self.collision, self.link_dist = self.sim.check_collision_obs()
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
@@ -343,6 +346,10 @@ class ReachObs(Task):
             reward += 0.5 * np.square(d) * self.distance_weight
         else:
             reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+
+        obs_dist = np.min(self.link_dist)
+        if obs_dist <= 0.3:
+            reward += obs_dist * (-5)
 
         reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
         reward += self.collision_weight if self.collision else 0

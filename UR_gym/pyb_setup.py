@@ -380,6 +380,52 @@ class PyBullet:
 
         return collision
 
+    def check_collision_obs(self):
+        """Check the collision between workbench and UR5
+
+        Possible collisions: table with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
+                             track with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
+                             collision margin 1cm (0.01m)
+        Print: link name that collides
+        Return: collision (bool): Whether collision is occurred
+        """
+        collision = False
+        link_dist = np.zeros(5)
+        for objs in [self._bodies_idx["table"], self._bodies_idx["track"], self._bodies_idx["obstacle"]]:
+            for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
+                if link_num == 0 or 6:
+                    pass  # link 0 and 6 of robot can never collide
+                else:
+                    """need to use different  margin for obstacle"""
+                    if objs == self._bodies_idx["obstacle"]:
+                        # set margin to be a large number to make sure we always get data
+                        info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
+                                                  distance=5.0)
+                        collision |= (info[8] < 0.01)
+                        link_dist[link_num-1] = info[8]
+                    else:
+                        info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
+                                                  distance=0.01)
+                        print(info)
+                        if info:  # distance smaller than 0.01m, collision occurs
+                            collision = True
+                            linkA = "None"
+                            if info[3] == 1:
+                                linkA = "upper_arm_link"
+                            elif info[3] == 2:
+                                linkA = "fore_arm_link"
+                            elif info[3] == 3:
+                                linkA = "wrist_1_link"
+                            elif info[3] == 4:
+                                linkA = "wrist_2_link"
+                            elif info[3] == 5:
+                                linkA = "wrist_3_link"
+
+                            linkB = "Table" if info[2] == 3 else "Track"
+                            print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[8])
+
+        return collision, link_dist
+
     def inverse_kinematics(self, body: str, link: int, position: np.ndarray, orientation: np.ndarray) -> np.ndarray:
         """Compute the inverse kinematics and return the new joint state.
 
