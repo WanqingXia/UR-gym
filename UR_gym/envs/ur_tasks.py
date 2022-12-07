@@ -58,5 +58,5 @@ class UR5ObsReachEnv(RobotTaskEnv):
     def __init__(self, render: bool = False) -> None:
         sim = PyBullet(render=render)
         robot = UR5Ori(sim, block_gripper=True, base_position=np.array([0.0, 0.0, 0.0]))
-        task = ReachOri(sim, robot=robot)
+        task = ReachObs(sim, robot=robot)
         super().__init__(robot, task)

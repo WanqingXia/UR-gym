@@ -273,6 +273,7 @@ class ReachObs(Task):
         self.collision_weight = -20
         self.distance_weight = -20
         self.obstacle = 0
+        self.delta = 0.2
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
@@ -297,13 +298,14 @@ class ReachObs(Task):
             body_name="obstacle",
             half_extents=np.ones(3) * 0.2 / 2,
             mass=0.0,
-            ghost=True,
+            ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
             rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
         )
 
     def get_obs(self) -> np.ndarray:
-        return np.concatenate((self.goal, self.obstacle))
+        # The environment checks for collision first then get obs so we can return the distance observation as well
+        return np.concatenate((self.goal, self.obstacle, self.link_dist))
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.robot.get_ee_position())
@@ -348,6 +350,7 @@ class ReachObs(Task):
             reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
 
         obs_dist = np.min(self.link_dist)
+        # print(self.link_dist)
         if obs_dist <= 0.3:
             reward += obs_dist * (-5)
 

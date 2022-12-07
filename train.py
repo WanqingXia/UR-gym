@@ -56,7 +56,7 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Create environment
 timesteps = 1000000
-env = gymnasium.make("UR5OriReach-v1", render=True)
+env = gymnasium.make("UR5ObsReach-v1", render=True)
 
 # ---------------- Create model and log
 model = SAC(policy="MultiInputPolicy", learning_rate=cos_schedule(1e-3, timesteps, 1000),  env=env, verbose=1)
@@ -67,7 +67,7 @@ env = Monitor(env, log_dir)
 # ---------------- Callback functions
 callback_visdom = VisdomCallback(name='UR-gym', check_freq=10, log_dir=log_dir)
 callback_save_best_model = EvalCallback(env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=1000,
-                                        deterministic=True, n_eval_episodes=100, render=False)
+                                        deterministic=True, n_eval_episodes=10, render=False)
 callback_list = CallbackList([callback_visdom, callback_save_best_model])
 
 model.learn(total_timesteps=timesteps, callback=callback_list)

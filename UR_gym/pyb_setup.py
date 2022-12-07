@@ -355,28 +355,27 @@ class PyBullet:
         collision = False
         for table_and_track in [self._bodies_idx["table"], self._bodies_idx["track"]]:
             for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
-                if link_num == 0 or 6:
+                if (link_num == 0) or (link_num == 6):
                     pass  # link 0 and 6 of robot can never collide
                 else:
                     info = p.getClosestPoints(self._bodies_idx["UR5"], table_and_track, linkIndexA=link_num,
                                               distance=0.01)
-                    print(info)
                     if info:  # distance smaller than 0.01m, collision occurs
                         collision = True
                         linkA = "None"
-                        if info[3] == 1:
+                        if link_num == 1:
                             linkA = "upper_arm_link"
-                        elif info[3] == 2:
+                        elif link_num == 2:
                             linkA = "fore_arm_link"
-                        elif info[3] == 3:
+                        elif link_num == 3:
                             linkA = "wrist_1_link"
-                        elif info[3] == 4:
+                        elif link_num == 4:
                             linkA = "wrist_2_link"
-                        elif info[3] == 5:
+                        elif link_num == 5:
                             linkA = "wrist_3_link"
 
-                        linkB = "Table" if info[2] == 3 else "Track"
-                        print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[8])
+                        linkB = "Table" if info[0][2] == 3 else "Track"
+                        print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[0][8])
 
         return collision
 
@@ -393,7 +392,7 @@ class PyBullet:
         link_dist = np.zeros(5)
         for objs in [self._bodies_idx["table"], self._bodies_idx["track"], self._bodies_idx["obstacle"]]:
             for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
-                if link_num == 0 or 6:
+                if (link_num == 0) or (link_num == 6):
                     pass  # link 0 and 6 of robot can never collide
                 else:
                     """need to use different  margin for obstacle"""
@@ -401,28 +400,29 @@ class PyBullet:
                         # set margin to be a large number to make sure we always get data
                         info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
                                                   distance=5.0)
-                        collision |= (info[8] < 0.01)
-                        link_dist[link_num-1] = info[8]
+                        collision |= (info[0][8] < 0.01)
+                        link_dist[link_num-1] = info[0][8]
+                        if info[0][8] < 0.01:
+                            print("Collision between link ", link_num, " and obstacle. Distance: ", info[0][8])
                     else:
                         info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
                                                   distance=0.01)
-                        print(info)
                         if info:  # distance smaller than 0.01m, collision occurs
                             collision = True
                             linkA = "None"
-                            if info[3] == 1:
+                            if link_num == 1:
                                 linkA = "upper_arm_link"
-                            elif info[3] == 2:
+                            elif link_num == 2:
                                 linkA = "fore_arm_link"
-                            elif info[3] == 3:
+                            elif link_num == 3:
                                 linkA = "wrist_1_link"
-                            elif info[3] == 4:
+                            elif link_num == 4:
                                 linkA = "wrist_2_link"
-                            elif info[3] == 5:
+                            elif link_num == 5:
                                 linkA = "wrist_3_link"
 
-                            linkB = "Table" if info[2] == 3 else "Track"
-                            print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[8])
+                            linkB = "Table" if info[0][2] == 3 else "Track"
+                            print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[0][8])
 
         return collision, link_dist
 

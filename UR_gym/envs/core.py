@@ -302,10 +302,12 @@ class RobotTaskEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
         self.sim.step()
+        self.task.check_collision()
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
-        self.task.check_collision()
         terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or self.task.collision)
+        if self.task.collision == True:
+            print("terminated due to collision")
         truncated = False
         info = {"is_success": terminated}
         reward = float(self.task.compute_reward(observation["achieved_goal"], self.task.get_goal(), info))
