@@ -306,10 +306,8 @@ class RobotTaskEnv(gym.Env):
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or self.task.collision)
-        if self.task.collision == True:
-            print("terminated due to collision")
         truncated = False
-        info = {"is_success": terminated}
+        info = {"is_success": not self.task.collision if terminated else terminated}
         reward = float(self.task.compute_reward(observation["achieved_goal"], self.task.get_goal(), info))
         return observation, reward, terminated, truncated, info
 
