@@ -269,11 +269,11 @@ class ReachObs(Task):
         self.robot = robot
         self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
         self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
-        self.action_weight = -1
-        self.collision_weight = -20
-        self.distance_weight = -20
-        self.obstacle = 0
-        self.delta = 0.2
+        self.action_weight = -10
+        self.collision_weight = -6
+        self.distance_weight = -100
+        self.obstacle = np.zeros(3)
+        self.delta = 0.1
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
@@ -322,6 +322,7 @@ class ReachObs(Task):
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
+        # goal = np.array([0.5, 0.1, 0.2]) # for testing, lock object position
         return goal
 
     def _sample_obstacle(self):
@@ -331,6 +332,7 @@ class ReachObs(Task):
             if distance(obstacle, self.goal) < 0.3:
                 obstacle = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
             else:
+                # obstacle = np.array([0.4, 0.4, 0.2]) # for testing, lock object position
                 return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
@@ -341,6 +343,7 @@ class ReachObs(Task):
         self.collision, self.link_dist = self.sim.check_collision_obs()
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
         reward = np.float32(0.0)
         d = distance(achieved_goal, desired_goal)
 
@@ -349,11 +352,7 @@ class ReachObs(Task):
         else:
             reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
 
-        obs_dist = np.min(self.link_dist)
-        # print(self.link_dist)
-        if obs_dist <= 0.3:
-            reward += obs_dist * (-5)
-
+        reward += np.power((0.2 / (np.min(self.link_dist) + 0.2)), 8) * self.collision_weight
         reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-        reward += self.collision_weight if self.collision else 0
+        # reward += self.collision_weight if self.collision else 0
         return reward.astype(np.float32)

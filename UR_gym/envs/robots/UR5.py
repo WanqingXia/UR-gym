@@ -45,7 +45,7 @@ class UR5(PyBulletRobot):
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
-        arm_joint_ctrl = action[:6]
+        arm_joint_ctrl = action[:6] * np.pi  # map joint velocity from -1~+1 to -pi~+pi
         target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
         self.control_joints(target_angles=target_arm_angles)
 
@@ -58,7 +58,7 @@ class UR5(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        ee_displacement = ee_displacement[:3] * 0.05  # limit maximum change in position
+        ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in position
         # get the current position and the target position
         ee_position = self.get_ee_position()
         target_ee_position = ee_position + ee_displacement
@@ -155,7 +155,7 @@ class UR5Reg(PyBulletRobot):
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
 
-        self.action = action[:6]
+        self.action = action[:6] * np.pi  # map joint velocity from -1~+1 to -pi~+pi
         target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(self.action)
         self.control_joints(target_angles=target_arm_angles)
 
@@ -168,7 +168,7 @@ class UR5Reg(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        ee_displacement = ee_displacement[:3] * 0.05  # limit maximum change in position
+        ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in position
         # get the current position and the target position
         ee_position = self.get_ee_position()
         target_ee_position = ee_position + ee_displacement
@@ -266,7 +266,7 @@ class UR5Ori(PyBulletRobot):
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        self.action = action[:6]
+        self.action = action[:6] * np.pi  # map joint velocity from -1~+1 to -pi~+pi
         target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(self.action)
         self.control_joints(target_angles=target_arm_angles)
 
@@ -279,7 +279,7 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        ee_displacement = ee_displacement[:3] * 0.05  # limit maximum change in position
+        ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
         # get the current position and the target position
         ee_position = self.get_ee_position()
         target_ee_position = ee_position + ee_displacement

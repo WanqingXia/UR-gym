@@ -2,6 +2,7 @@ import sys
 import gymnasium
 sys.modules["gym"] = gymnasium
 from stable_baselines3 import SAC, HerReplayBuffer, DDPG
+from stable_baselines3.sac.policies import MultiInputPolicy
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.callbacks import EvalCallback
@@ -55,12 +56,12 @@ signal.signal(signal.SIGINT, sig_handler)
 # ---------------- Train
 
 # ---------------- Create environment
-timesteps = 1000000
+timesteps = 500000
 env = gymnasium.make("UR5ObsReach-v1", render=True)
 
 # ---------------- Create model and log
-model = SAC(policy="MultiInputPolicy", learning_rate=cos_schedule(1e-3, timesteps, 1000),  env=env, verbose=1)
-log_dir = "./RobotLearn/" + datetime.now().strftime("SAC_Ori_t2")
+model = SAC(MultiInputPolicy, learning_rate=cos_schedule(1e-3, timesteps, 1000), gamma=0.99, env=env, verbose=1)
+log_dir = "./RobotLearn/" + datetime.now().strftime("SAC_Obs_t1")
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 
