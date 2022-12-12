@@ -19,15 +19,15 @@ def angle_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the geodesic distance between two array of angles. This function is vectorized.
 
     Args:
-        a (np.ndarray): First array.
-        b (np.ndarray): Second array.
+        a (np.ndarray): First quaternion array in (real, i, j, k) format.
+        b (np.ndarray): Second quaternion array in (real, i, j, k) format.
 
     Returns:
-        np.ndarray: The geodesic distance between the angles.
+        np.ndarray: The normalised distance between the angles.
     """
     assert a.shape == b.shape
-    dist = 1 - np.inner(a, b) ** 2
-    return dist
+    angle = 2 * np.arccos(np.abs(np.sum(np.dot(a, b))))
+    return angle / np.pi
 
     # code useful for HER
     # if len(a) == 4:

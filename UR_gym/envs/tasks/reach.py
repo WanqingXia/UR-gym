@@ -1,7 +1,7 @@
 from typing import Any, Dict
 import os
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+from pyquaternion import Quaternion
 from UR_gym.envs.core import Task
 from UR_gym.utils import distance, angle_distance
 
@@ -151,8 +151,8 @@ class ReachOri(Task):
         self,
         sim,
         robot,
-        distance_threshold=0.05,
-        angular_distance_threshold=0.05,
+        distance_threshold=0.05,  # 5cm
+        angular_distance_threshold=0.05,  # 9 degrees
     ) -> None:
         super().__init__(sim)
         self.distance_threshold = distance_threshold
@@ -163,7 +163,7 @@ class ReachOri(Task):
         self.action_weight = -1
         self.collision_weight = -20
         self.distance_weight = -160
-        self.orientation_weight = -40
+        self.orientation_weight = -4
         self.delta = 0.2
         self.collision = False
         self.link_dist = np.zeros(5)
@@ -201,7 +201,7 @@ class ReachOri(Task):
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
-        goal_rot = np.array(R.random().as_quat())
+        goal_rot = np.array(Quaternion.random().elements)
 
         # return np.concatenate((self.robot.get_ee_position(), self.robot.get_ee_orientation()))
         return np.concatenate((goal_pos, goal_rot))
@@ -227,10 +227,7 @@ class ReachOri(Task):
         else:
             reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
         """Orientation Reward"""
-        if dr <= self.delta:
-            reward += 0.5 * np.square(dr) * self.orientation_weight
-        else:
-            reward += self.orientation_weight * self.delta * (np.abs(dr) - 0.5 * self.delta)
+        reward += np.abs(dr) * self.orientation_weight
         """Action Reward"""
         reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
         """Collision Reward"""

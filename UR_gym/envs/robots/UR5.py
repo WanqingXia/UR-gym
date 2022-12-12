@@ -328,8 +328,8 @@ class UR5Ori(PyBulletRobot):
         return self.get_link_position(self.ee_link)
 
     def get_ee_orientation(self) -> np.ndarray:
-        """Returns the orientation of the end-effector as (x, y, z, w)"""
-        return self.get_link_orientation(self.ee_link)
+        """Returns the orientation of the end-effector as (w, x, y, z)"""
+        return np.roll(self.get_link_orientation(self.ee_link), 1)
 
     def get_ee_velocity(self) -> np.ndarray:
         """Returns the velocity of the end-effector as (vx, vy, vz)"""
