@@ -162,8 +162,8 @@ class ReachOri(Task):
         self.goal_range_high = np.array([0.7, 0.4, 0.6])
         self.action_weight = -1
         self.collision_weight = -20
-        self.distance_weight = -16
-        self.orientation_weight = -4
+        self.distance_weight = -160
+        self.orientation_weight = -40
         self.delta = 0.2
         self.collision = False
         self.link_dist = np.zeros(5)
