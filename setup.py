@@ -19,7 +19,7 @@ setup(
     include_package_data=True,
     package_data={"UR_gym": ["version.txt"]},
     version=__version__,
-    install_requires=["gymnasium~=0.26", "pybullet", "numpy", "scipy"],
+    install_requires=["gymnasium~=0.26", "pybullet", "numpy", "scipy", "pyquaternion", "tqdm"],
     extras_require={
         "develop": ["pytest-cov", "black", "isort", "pytype", "sphinx", "sphinx-rtd-theme"],
     },

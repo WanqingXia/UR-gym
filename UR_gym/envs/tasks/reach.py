@@ -311,10 +311,11 @@ class ReachObs(Task):
     def reset(self) -> None:
         self.goal = self._sample_goal()
         self.obstacle = self._sample_obstacle()
-        self.collision = False
-        self.link_dist = np.zeros(5)
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
         self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
+        self.collision, self.link_dist = self.sim.check_collision_obs()
+        if self.collision:
+            print("Collision after reset, this should not happen")
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
