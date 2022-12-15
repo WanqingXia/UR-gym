@@ -37,14 +37,6 @@ class ReachIAI(Task):
             position=np.zeros(3),
             rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )
-        # self.sim.create_sphere(
-        #     body_name="ori",
-        #     radius=0.02,
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([0.6, 0.4, 0.8]),
-        #     rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
-        # )
 
     def get_obs(self) -> np.ndarray:
         return np.array([])  # no task-specific observation
@@ -88,8 +80,8 @@ class ReachReg(Task):
         self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
         self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
         self.action_weight = -1
-        self.collision_weight = -20
-        self.distance_weight = -20
+        self.collision_weight = -200
+        self.distance_weight = -200
         self.delta = 0.2
         self.collision = False
         with self.sim.no_rendering():
@@ -161,7 +153,7 @@ class ReachOri(Task):
         self.goal_range_low = np.array([0.4, -0.4, 0.2])  # table width, table length, height
         self.goal_range_high = np.array([0.7, 0.4, 0.6])
         self.action_weight = -1
-        self.collision_weight = -20
+        self.collision_weight = -200
         self.distance_weight = -160
         self.orientation_weight = -4
         self.delta = 0.2
@@ -196,21 +188,17 @@ class ReachOri(Task):
     def reset(self) -> None:
         self.collision = False
         self.goal = self._sample_goal()
-        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+        self.sim.set_base_pose("target", self.goal[:3], np.roll(self.goal[3:], -1))
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
         goal_rot = np.array(Quaternion.random().elements)
-
-        # return np.concatenate((self.robot.get_ee_position(), self.robot.get_ee_orientation()))
         return np.concatenate((goal_pos, goal_rot))
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal[:3], desired_goal[:3])
         dr = angle_distance(achieved_goal[3:], desired_goal[3:])
-        if d < self.distance_threshold and dr < self.angular_distance_threshold:
-            print("Succeed!")
         return np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
@@ -226,10 +214,11 @@ class ReachOri(Task):
             reward += 0.5 * np.square(d) * self.distance_weight
         else:
             reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+        # reward += np.abs(d) * self.distance_weight
         """Orientation Reward"""
         reward += np.abs(dr) * self.orientation_weight
         """Action Reward"""
-        reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
         """Collision Reward"""
         reward += self.collision_weight if self.collision else 0
         return reward.astype(np.float32)

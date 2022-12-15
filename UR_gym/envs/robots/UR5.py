@@ -80,7 +80,7 @@ class UR5(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        arm_joint_ctrl = arm_joint_ctrl * 0.3  # limit maximum change in position, 0.3 rad everytime
+        arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.3 rad everytime
         # get the current position and the target position
         current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(6)])
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl
@@ -190,7 +190,7 @@ class UR5Reg(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        arm_joint_ctrl = arm_joint_ctrl * 0.3  # limit maximum change in position, 0.3 rad everytime
+        arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.3 rad everytime
         # get the current position and the target position
         current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(6)])
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl
@@ -279,17 +279,25 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
+        # ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
+        # # get the current position and the target position
+        # ee_position = self.get_ee_position()
+        # target_ee_position = ee_position + ee_displacement
+        # # Clip the height target. For some reason, it has a great impact on learning
+        # target_ee_position[2] = np.max((0, target_ee_position[2]))
+        # # compute the new joint angles
+        # target_arm_angles = self.inverse_kinematics(
+        #     link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
+        # )
+        # target_arm_angles = target_arm_angles[:6]  # remove fingers angles
+        # return target_arm_angles
         # get the current position and the target position
-        ee_position = self.get_ee_position()
-        target_ee_position = ee_position + ee_displacement
-        # Clip the height target. For some reason, it has a great impact on learning
-        target_ee_position[2] = np.max((0, target_ee_position[2]))
         # compute the new joint angles
+
+        """this part of the code is used for testing (inv_kin.py), for control robot with ee position, need to restore
+        the code above"""
         target_arm_angles = self.inverse_kinematics(
-            link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
-        )
-        target_arm_angles = target_arm_angles[:6]  # remove fingers angles
+            link=self.ee_link, position=ee_displacement[:3], orientation=np.roll(ee_displacement[3:], -1))
         return target_arm_angles
 
     def arm_joint_ctrl_to_target_arm_angles(self, arm_joint_ctrl: np.ndarray) -> np.ndarray:
@@ -301,7 +309,7 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        arm_joint_ctrl = arm_joint_ctrl * 0.3  # limit maximum change in position, 0.3 rad everytime
+        arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.3 rad everytime
         # get the current position and the target position
         current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(6)])
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl
@@ -328,7 +336,7 @@ class UR5Ori(PyBulletRobot):
         return self.get_link_position(self.ee_link)
 
     def get_ee_orientation(self) -> np.ndarray:
-        """Returns the orientation of the end-effector as (w, x, y, z)"""
+        """Returns the orientation of the end-effector as (real, x, y, z)"""
         return np.roll(self.get_link_orientation(self.ee_link), 1)
 
     def get_ee_velocity(self) -> np.ndarray:
