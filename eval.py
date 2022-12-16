@@ -23,7 +23,7 @@ env = gymnasium.make("UR5OriReach-v1", render=True)
 
 # ----------------- Load the pre-trained model from files
 print("load the pre-trained model from files")
-model_path = "RobotLearn/SAC_Ori_trial1/"
+model_path = "RobotLearn/UR5_SAC_Ori/"
 model = SAC.load(model_path + "best_model", env=env)
 
 # ------------------ Evaluate the policy

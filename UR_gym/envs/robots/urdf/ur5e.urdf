@@ -59,67 +59,14 @@
           package. Users CANNOT rely on this file being available, or stored in
           this location. Nor can they rely on the existence of the macro.
   -->
-  <transmission name="shoulder_pan_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="shoulder_pan_joint">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="shoulder_pan_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="shoulder_lift_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="shoulder_lift_joint">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="shoulder_lift_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="elbow_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="elbow_joint">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="elbow_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="wrist_1_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="wrist_1_joint">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="wrist_1_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="wrist_2_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="wrist_2_joint">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="wrist_2_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
-  <transmission name="wrist_3_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="wrist_3_joint">
-      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="wrist_3_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission>
+
   <!-- links: main serial chain -->
   <link name="base_link"/>
   <link name="base_link_inertia">
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/base.dae"/>
+        <mesh filename="../meshes/ur5/visual/base.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -128,7 +75,7 @@
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/base.stl"/>
+        <mesh filename="../meshes/ur5/collision/base.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -141,16 +88,16 @@
     <visual>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/shoulder.dae"/>
+        <mesh filename="../meshes/ur5/visual/shoulder.dae"/>
       </geometry>
-      <material name="LightGrey">
-        <color rgba="0.7 0.7 0.7 1.0"/>
+      <material name="UR-Blue">
+        <color rgba="0.376 0.576 0.674 1.0"/>
       </material>
     </visual>
     <collision>
       <origin rpy="0 0 3.141592653589793" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/shoulder.stl"/>
+        <mesh filename="../meshes/ur5/collision/shoulder.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -163,7 +110,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.138"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/upperarm.dae"/>
+        <mesh filename="../meshes/ur5/visual/upperarm.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -172,7 +119,7 @@
     <collision>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.138"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/upperarm.stl"/>
+        <mesh filename="../meshes/ur5/collision/upperarm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -185,7 +132,7 @@
     <visual>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.007"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/forearm.dae"/>
+        <mesh filename="../meshes/ur5/visual/forearm.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -194,7 +141,7 @@
     <collision>
       <origin rpy="1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0.007"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/forearm.stl"/>
+        <mesh filename="../meshes/ur5/collision/forearm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -205,19 +152,18 @@
   </link>
   <link name="wrist_1_link">
     <visual>
-      <!-- TODO: Move this to a parameter -->
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.127"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/wrist1.dae"/>
+        <mesh filename="../meshes/ur5/visual/wrist1.dae"/>
       </geometry>
-      <material name="LightGrey">
-        <color rgba="0.7 0.7 0.7 1.0"/>
+      <material name="UR-Blue">
+        <color rgba="0.376 0.576 0.674 1.0"/>
       </material>
     </visual>
     <collision>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.127"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/wrist1.stl"/>
+        <mesh filename="../meshes/ur5/collision/wrist1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -230,7 +176,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 -0.0997"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/wrist2.dae"/>
+        <mesh filename="../meshes/ur5/visual/wrist2.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -239,7 +185,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.0997"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/wrist2.stl"/>
+        <mesh filename="../meshes/ur5/collision/wrist2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -248,11 +194,12 @@
       <inertia ixx="0.0025598989760400002" ixy="0.0" ixz="0.0" iyy="0.0025598989760400002" iyz="0.0" izz="0.0021942"/>
     </inertial>
   </link>
+
   <link name="wrist_3_link">
     <visual>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.0989"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/visual/wrist3.dae"/>
+        <mesh filename="../meshes/ur5/visual/wrist3.dae"/>
       </geometry>
       <material name="LightGrey">
         <color rgba="0.7 0.7 0.7 1.0"/>
@@ -261,7 +208,7 @@
     <collision>
       <origin rpy="1.5707963267948966 0 0" xyz="0 0 -0.0989"/>
       <geometry>
-        <mesh filename="package://ur_description/meshes/ur5e/collision/wrist3.stl"/>
+        <mesh filename="../meshes/ur5/collision/wrist3.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -270,6 +217,7 @@
       <inertia ixx="9.890410052167731e-05" ixy="0.0" ixz="0.0" iyy="9.890410052167731e-05" iyz="0.0" izz="0.0001321171875"/>
     </inertial>
   </link>
+
   <!-- joints: main serial chain -->
   <joint name="base_link-base_link_inertia" type="fixed">
     <parent link="base_link"/>
@@ -329,6 +277,7 @@
     <limit effort="28.0" lower="-6.283185307179586" upper="6.283185307179586" velocity="3.141592653589793"/>
     <dynamics damping="0" friction="0"/>
   </joint>
+
   <!-- ROS-Industrial 'base' frame: base_link to UR 'Base' Coordinates transform -->
   <link name="base"/>
   <joint name="base_link-base_fixed_joint" type="fixed">
@@ -341,20 +290,20 @@
     <parent link="base_link"/>
     <child link="base"/>
   </joint>
-  <!-- ROS-Industrial 'flange' frame: attachment point for EEF models -->
-  <link name="flange"/>
-  <joint name="wrist_3-flange" type="fixed">
+
+  <joint name="ee_fixed_joint" type="fixed">
     <parent link="wrist_3_link"/>
-    <child link="flange"/>
-    <origin rpy="0 -1.5707963267948966 -1.5707963267948966" xyz="0 0 0"/>
+    <child link="ee_link"/>
+    <origin rpy="0.0 0.0 1.57079632679" xyz="0.0 0.0 0.0"/>
   </joint>
-  <!-- ROS-Industrial 'tool0' frame: all-zeros tool frame -->
-  <link name="tool0"/>
-  <joint name="flange-tool0" type="fixed">
-    <!-- default toolframe: X+ left, Y+ up, Z+ front -->
-    <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0 0 0"/>
-    <parent link="flange"/>
-    <child link="tool0"/>
-  </joint>
+  <link name="ee_link">
+    <collision>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0 0"/>
+    </collision>
+  </link>
+
 </robot>
 

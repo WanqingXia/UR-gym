@@ -252,15 +252,15 @@ class UR5Ori(PyBulletRobot):
         super().__init__(
             sim,
             body_name="UR5",
-            file_name=os.getcwd() + "/UR_gym/envs/robots/urdf/ur5.urdf",
+            file_name=os.getcwd() + "/UR_gym/envs/robots/urdf/ur5e.urdf",
             base_position=base_position,
             action_space=action_space,
-            joint_indices=np.array([0, 1, 2, 3, 4, 5]),  # 1-6: robot joints, 9: gripper finger
+            joint_indices=np.array([1, 2, 3, 4, 5, 6]),  # 1-6: robot joints, 9: gripper finger
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
         self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
-        self.ee_link = 6  # the id of ee_link
+        self.ee_link = 7  # the id of ee_link
         self.block_gripper = block_gripper
 
     def set_action(self, action: np.ndarray) -> None:

@@ -174,7 +174,7 @@ class ReachOri(Task):
             ghost=True,
             position=np.array([0.0, 0.0, 1.0]),
             rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
-            texture=os.getcwd() + "/UR_gym/assets/colored_cube.png",
+            texture=os.getcwd() + "/UR_gym/assets/colored_cube_heart.png",
         )
 
     def get_obs(self) -> np.ndarray:
@@ -199,6 +199,7 @@ class ReachOri(Task):
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal[:3], desired_goal[:3])
         dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        # print("distance: ", d, "angular distance: ", dr)
         return np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
