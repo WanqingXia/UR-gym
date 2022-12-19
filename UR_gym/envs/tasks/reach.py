@@ -4,7 +4,8 @@ import numpy as np
 from pyquaternion import Quaternion
 from UR_gym.envs.core import Task
 from UR_gym.utils import distance, angle_distance
-
+from ur_ikfast import ur_kinematics
+ur5e = ur_kinematics.URKinematics('ur5e')
 
 class ReachIAI(Task):
     def __init__(
@@ -192,9 +193,21 @@ class ReachOri(Task):
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
-        goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
-        goal_rot = np.array(Quaternion.random().elements)
-        return np.concatenate((goal_pos, goal_rot))
+        # Adding the goal verification code
+        valid = False
+        while valid is False:
+            goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
+            goal_rot = np.array(Quaternion.random().elements)
+            goal = np.concatenate((goal_pos, np.roll(goal_rot, -1)))
+            angles = ur5e.inverse(goal, False)
+            if angles is None or np.max(np.abs(angles)) > 6.28:
+                pass
+            else:
+                self.robot.set_joint_angles(angles)
+                self.sim.step()
+                valid = self.is_success(goal, self.get_achieved_goal())
+        self.robot.reset()
+        return goal
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal[:3], desired_goal[:3])
