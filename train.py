@@ -56,12 +56,12 @@ signal.signal(signal.SIGINT, sig_handler)
 # ---------------- Train
 
 # ---------------- Create environment
-timesteps = 1000000
+timesteps = 2000000
 env = gymnasium.make("UR5OriReach-v1", render=True)
 
 # ---------------- Create model and log
 model = SAC(MultiInputPolicy, learning_rate=1e-4, gamma=0.95, env=env, verbose=1)
-log_dir = "./RobotLearn/" + "SAC_Ori_new2"
+log_dir = "./RobotLearn/" + "SAC_Ori_new4"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 
