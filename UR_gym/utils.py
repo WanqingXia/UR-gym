@@ -12,7 +12,10 @@ def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         np.ndarray: The distance between the arrays.
     """
     assert a.shape == b.shape
-    return np.linalg.norm(a - b, axis=-1)
+    if len(a) == 7:
+        return np.linalg.norm(a[:3] - b[:3], axis=-1)
+    else:
+        return np.array([np.linalg.norm(row[0] - row[1], axis=-1) for row in zip(a[:, :3], b[:, :3])])
 
 
 def angle_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -26,13 +29,7 @@ def angle_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         np.ndarray: The normalised distance between the angles.
     """
     assert a.shape == b.shape
-    angle = 2 * np.arccos(np.abs(np.sum(np.dot(a, b))))
-    return angle / np.pi
-
-    # code useful for HER
-    # if len(a) == 4:
-    #     dist = 1 - np.inner(a, b) ** 2
-    #     return dist
-    # else:
-    #     dist = [1 - np.inner(row[0], row[1]) ** 2 for row in zip(a, b)]
-    #     return np.array(dist)
+    if len(a) == 7:
+        return 2 * np.arccos(np.abs(np.sum(np.dot(a[3:], b[3:])))) / np.pi
+    else:
+        return np.array([2 * np.arccos(np.abs(np.sum(np.dot(row[0], row[1])))) / np.pi for row in zip(a[:, 3:], b[:, 3:])])

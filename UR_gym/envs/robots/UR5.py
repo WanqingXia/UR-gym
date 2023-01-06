@@ -268,7 +268,8 @@ class UR5Ori(PyBulletRobot):
         action = np.clip(action, self.action_space.low, self.action_space.high)
         self.action = action[:6] * np.pi  # map joint velocity from -1~+1 to -pi~+pi
         target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(self.action)
-        self.control_joints(target_angles=target_arm_angles)
+        # self.control_joints(target_angles=target_arm_angles)
+        self.set_joint_angles(angles=target_arm_angles)
 
     def ee_displacement_to_target_arm_angles(self, ee_displacement: np.ndarray) -> np.ndarray:
         """Compute the target arm angles from the end-effector displacement.
@@ -311,7 +312,7 @@ class UR5Ori(PyBulletRobot):
         """
         arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.3 rad everytime
         # get the current position and the target position
-        current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(6)])
+        current_arm_joint_angles = np.array(self.get_joint_angles())
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl
         return target_arm_angles
 
@@ -319,9 +320,9 @@ class UR5Ori(PyBulletRobot):
         # end-effector position, orientation and velocity
         ee_position = np.array(self.get_ee_position())
         ee_orientation = np.array(self.get_ee_orientation())
-        ee_velocity = np.array(self.get_ee_velocity())
+        # ee_velocity = np.array(self.get_ee_velocity())
         joint_angles = np.array(self.get_joint_angles())
-        observation = np.concatenate((ee_position, ee_orientation, ee_velocity, joint_angles))
+        observation = np.concatenate((ee_position, ee_orientation, joint_angles))
         return observation
 
     def reset(self) -> None:
@@ -336,8 +337,8 @@ class UR5Ori(PyBulletRobot):
         return self.get_link_position(self.ee_link)
 
     def get_ee_orientation(self) -> np.ndarray:
-        """Returns the orientation of the end-effector as (real, x, y, z)"""
-        return np.roll(self.get_link_orientation(self.ee_link), 1)
+        """Returns the orientation of the end-effector as (x, y, z, real)"""
+        return self.get_link_orientation(self.ee_link)
 
     def get_ee_velocity(self) -> np.ndarray:
         """Returns the velocity of the end-effector as (vx, vy, vz)"""

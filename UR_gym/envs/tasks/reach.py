@@ -7,6 +7,7 @@ from UR_gym.utils import distance, angle_distance
 from ur_ikfast import ur_kinematics
 ur5e = ur_kinematics.URKinematics('ur5e')
 
+
 class ReachIAI(Task):
     def __init__(
         self,
@@ -154,8 +155,8 @@ class ReachOri(Task):
         self.goal_range_low = np.array([0.4, -0.4, 0.2])  # table width, table length, height
         self.goal_range_high = np.array([0.7, 0.4, 0.6])
         self.action_weight = -1
-        self.collision_weight = -200
-        self.distance_weight = -160
+        self.collision_weight = -500
+        self.distance_weight = -16
         self.orientation_weight = -4
         self.delta = 0.2
         self.collision = False
@@ -189,7 +190,7 @@ class ReachOri(Task):
     def reset(self) -> None:
         self.collision = False
         self.goal = self._sample_goal()
-        self.sim.set_base_pose("target", self.goal[:3], np.roll(self.goal[3:], -1))
+        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
@@ -210,25 +211,27 @@ class ReachOri(Task):
         return goal
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal[:3], desired_goal[:3])
-        dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        d = distance(achieved_goal, desired_goal)
+        dr = angle_distance(achieved_goal, desired_goal)
         # print("distance: ", d, "angular distance: ", dr)
         return np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
-        self.collision = self.sim.check_collision()
+        # self.collision = self.sim.check_collision()
+        self.collision = False
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
-        d = distance(achieved_goal[:3], desired_goal[:3])
-        dr = angle_distance(achieved_goal[3:], desired_goal[3:])
+        d = distance(achieved_goal, desired_goal)
+        dr = angle_distance(achieved_goal, desired_goal)
 
         """Distance Reward"""
-        if d <= self.delta:
-            reward += 0.5 * np.square(d) * self.distance_weight
-        else:
-            reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
-        # reward += np.abs(d) * self.distance_weight
+        # if d <= self.delta:
+        #     reward += 0.5 * np.square(d) * self.distance_weight
+        # else:
+        #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+
+        reward += np.abs(d) * self.distance_weight
         """Orientation Reward"""
         reward += np.abs(dr) * self.orientation_weight
         """Action Reward"""
@@ -236,24 +239,6 @@ class ReachOri(Task):
         """Collision Reward"""
         reward += self.collision_weight if self.collision else 0
         return reward.astype(np.float32)
-        
-        # Code useful for HER
-        # if len(achieved_goal) == 7:
-        #     d = distance(achieved_goal[:3], desired_goal[:3])
-        #     dr = angle_distance(achieved_goal[3:], desired_goal[3:])
-        #     reward += d * self.distance_weight
-        #     reward += dr * self.orientation_weight
-        #     reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
-        #     reward += self.collision_weight if self.collision else 0
-        #     return reward.astype(np.float32)
-        # else:
-        #     d = distance(achieved_goal[:, :3], desired_goal[:, :3])
-        #     dr = angle_distance(achieved_goal[:, 3:], desired_goal[:, 3:])
-        #     reward += d * self.distance_weight
-        #     reward += dr * self.orientation_weight
-        #     # reward += np.sum(np.abs(self.robot.get_action())) * self.action_weight
-        #     # reward += self.collision_weight if self.collision else 0
-        #     return reward.astype(np.float32)
 
 
 class ReachObs(Task):
