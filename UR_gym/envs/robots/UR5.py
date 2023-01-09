@@ -263,6 +263,13 @@ class UR5Ori(PyBulletRobot):
         self.ee_link = 7  # the id of ee_link
         self.block_gripper = block_gripper
 
+        # following parameters are for OMPL
+        self.id = 0
+        self.joint_idx = np.array([1, 2, 3, 4, 5, 6])
+        self.num_dim = len(self.joint_idx)
+        self.joint_bounds = []
+        self.state = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
+
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
@@ -354,3 +361,32 @@ class UR5Ori(PyBulletRobot):
     def get_action(self):
         """Returns the action of the all 6 joints as (a1, a2, a3, a4, a5, a6)"""
         return self.action
+
+    # following functions are for OMPL
+    def get_joint_bounds(self):
+        '''
+        Get joint bounds.
+        By default, read from pybullet
+        '''
+        for i, joint_id in enumerate(self.joint_idx):
+            joint_info = self.sim.physics_client.getJointInfo(self.id, joint_id)
+            low = joint_info[8] # low bounds
+            high = joint_info[9] # high bounds
+            if low < high:
+                self.joint_bounds.append([low, high])
+        print("Joint bounds: {}".format(self.joint_bounds))
+        return self.joint_bounds
+
+    def get_cur_state(self):
+        return self.get_joint_angles()
+
+    def set_state(self, state):
+        '''
+        Set robot state.
+        To faciliate collision checking
+        Args:
+            state: list[Float], joint values of robot
+        '''
+        self.set_joint_angles(state)
+        self.state = state
+
