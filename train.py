@@ -5,6 +5,7 @@ from stable_baselines3 import SAC, HerReplayBuffer, DDPG
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.env_checker import check_env
 from utils.callbackFunctions import VisdomCallback
 from typing import Callable
 import UR_gym
@@ -57,6 +58,7 @@ signal.signal(signal.SIGINT, sig_handler)
 # ---------------- Create environment
 timesteps = 1000000
 env = gymnasium.make("UR5OriReach-v1", render=True)
+check_env(env, warn=True)
 
 # ---------------- Create model and log
 # model = SAC("MultiInputPolicy", learning_rate=1e-4, gamma=0.99, env=env, verbose=1)
