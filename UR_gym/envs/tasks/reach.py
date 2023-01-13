@@ -192,11 +192,33 @@ class ReachOri(Task):
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
+    def generate_testset(self):
+        goal_range = self.goal_range_high - self.goal_range_low
+        rows = int(round((goal_range[0] * 50 + 1) * (goal_range[1] * 50 + 1) * (goal_range[2] * 50 + 1) * 5))
+        save_goals = np.zeros((rows, 7))
+        counter = 0
+        for i in range(int(round((goal_range[0] * 50 + 1)))):
+            for j in range(int(round(goal_range[1] * 50 + 1))):
+                for k in range(int(round(goal_range[2] * 50 + 1))):
+                    for w in range(5):
+                        goal = self._sample_goal()
+                        goal[0] = i / 50 + self.goal_range_low[0]
+                        goal[1] = j / 50 + self.goal_range_low[1]
+                        goal[2] = k / 50 + self.goal_range_low[2]
+                        save_goals[counter, :] = goal
+                        counter += 1
+
+        np.savetxt("test_set.txt", save_goals)
+
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         # Adding the goal verification code
         valid = False
+        counter = 0
         while valid is False:
+            if counter > 0:
+                print("retrying {} times".format(counter))
+            counter += 1
             goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
             goal_rot = np.array(Quaternion.random().elements)
             goal = np.concatenate((goal_pos, np.roll(goal_rot, -1)))
