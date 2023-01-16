@@ -9,7 +9,6 @@ import time
 from UR_gym.utils import distance, angle_distance
 import numpy as np
 from tqdm import tqdm
-from scipy.spatial.transform import Rotation as R
 
 def sig_handler(signal, frame):
     env.close()
@@ -43,9 +42,7 @@ for trials in tqdm(range(num_trials)):
         achieved = obs['achieved_goal'].flatten()
         if steps == 99 or done:
             obs = env.reset()
-            what = distance(achieved[:3], desired[:3])
             logs[0, trials] = distance(achieved[:3], desired[:3])
-            where = angle_distance(achieved[3:], desired[3:])
             logs[1, trials] = angle_distance(achieved[3:], desired[3:])
             logs[2, trials] = steps
             logs[3, trials] = info[0]['is_success']

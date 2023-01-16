@@ -62,7 +62,7 @@ check_env(env, warn=True)
 
 # ---------------- Create model and log
 # model = SAC("MultiInputPolicy", learning_rate=1e-4, gamma=0.99, env=env, verbose=1)
-model = DDPG(
+model = SAC(
 "MultiInputPolicy",
 env,
 replay_buffer_class = HerReplayBuffer,
@@ -72,9 +72,10 @@ replay_buffer_kwargs = dict(
     goal_selection_strategy="future",
     online_sampling=True,
     max_episode_length=100,
-), verbose=1)
+),
+    verbose=1)
 
-log_dir = "./RobotLearn/" + "DDPG_Ori_HER"
+log_dir = "./RobotLearn/" + "SAC_Ori_t1"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 
