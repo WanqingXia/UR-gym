@@ -161,6 +161,8 @@ class ReachOri(Task):
         self.delta = 0.2
         self.collision = False
         self.link_dist = np.zeros(5)
+
+        self.test_goal = np.zeros(7)
         with self.sim.no_rendering():
             self._create_scene()
             self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
@@ -189,22 +191,29 @@ class ReachOri(Task):
 
     def reset(self) -> None:
         self.collision = False
-        self.goal = self._sample_goal()
+        if self.test_goal.all() != np.zeros(7).all():
+            self.goal = self.test_goal
+            self.test_goal = np.zeros(7)
+        else:
+            self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+
+    def set_goal(self, new_goal):
+        self.test_goal = new_goal
 
     def generate_testset(self):
         goal_range = self.goal_range_high - self.goal_range_low
-        rows = int(round((goal_range[0] * 50 + 1) * (goal_range[1] * 50 + 1) * (goal_range[2] * 50 + 1) * 5))
+        rows = int(round((goal_range[0] * 20 + 1) * (goal_range[1] * 20 + 1) * (goal_range[2] * 20 + 1) * 5))
         save_goals = np.zeros((rows, 7))
         counter = 0
-        for i in range(int(round((goal_range[0] * 50 + 1)))):
-            for j in range(int(round(goal_range[1] * 50 + 1))):
-                for k in range(int(round(goal_range[2] * 50 + 1))):
+        for i in range(int(round((goal_range[0] * 20 + 1)))):
+            for j in range(int(round(goal_range[1] * 20 + 1))):
+                for k in range(int(round(goal_range[2] * 20 + 1))):
                     for w in range(5):
                         goal = self._sample_goal()
-                        goal[0] = i / 50 + self.goal_range_low[0]
-                        goal[1] = j / 50 + self.goal_range_low[1]
-                        goal[2] = k / 50 + self.goal_range_low[2]
+                        goal[0] = i / 20 + self.goal_range_low[0]
+                        goal[1] = j / 20 + self.goal_range_low[1]
+                        goal[2] = k / 20 + self.goal_range_low[2]
                         save_goals[counter, :] = goal
                         counter += 1
 
