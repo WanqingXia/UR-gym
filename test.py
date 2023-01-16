@@ -23,7 +23,7 @@ def test_RLmodel(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn/SAC_Ori_t1/"
+    model_path = "RobotLearn/SAC_Ori_HER2/"
     model = SAC.load(model_path + "best_model", env=env)
 
     # env = model.get_env()
