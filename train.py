@@ -48,37 +48,39 @@ def cos_schedule(initial_value: float, total_timestep: int, warmup_step: int) ->
 
 signal.signal(signal.SIGINT, sig_handler)
 
-# ---------------- Load model and log
-# model = SAC.load("./RobotLearn/SAC_Ori/best_model", env=env)
-# log_dir = "./RobotLearn/SAC_Ori"
-# env = Monitor(env, log_dir)
+# ---------------- Load model and continue training
 
-
-# ---------------- Train
-
-# ---------------- Create environment
-timesteps = 1000000
+timesteps = 2000000
 env = gymnasium.make("UR5OriReach-v1", render=True)
 check_env(env, warn=True)
-
-# ---------------- Create model and log
-# model = SAC("MultiInputPolicy", learning_rate=1e-4, gamma=0.99, env=env, verbose=1)
-model = SAC(
-    "MultiInputPolicy",
-    env,
-    replay_buffer_class=HerReplayBuffer,
-    # Parameters for HER
-    replay_buffer_kwargs=dict(
-        n_sampled_goal=4,
-        goal_selection_strategy="future",
-        online_sampling=True,
-        max_episode_length=100,
-    ),
-    verbose=1)
-
-log_dir = "./RobotLearn/" + "SAC_Ori_t1"
-os.makedirs(log_dir, exist_ok=True)
+model = SAC.load("./RobotLearn/SAC_Ori_Reg/best_model", env=env)
+log_dir = "./RobotLearn/SAC_Ori_Reg"
 env = Monitor(env, log_dir)
+
+
+# ---------------- Training from scratch
+
+# timesteps = 2000000
+# env = gymnasium.make("UR5OriReach-v1", render=True)
+# check_env(env, warn=True)
+#
+# model = SAC("MultiInputPolicy", env=env, verbose=1)
+# # model = SAC(
+# #     "MultiInputPolicy",
+# #     env,
+# #     replay_buffer_class=HerReplayBuffer,
+# #     # Parameters for HER
+# #     replay_buffer_kwargs=dict(
+# #         n_sampled_goal=4,
+# #         goal_selection_strategy="future",
+# #         online_sampling=True,
+# #         max_episode_length=100,
+# #     ),
+# #     verbose=1)
+#
+# log_dir = "./RobotLearn/" + "SAC_Ori_Reg"
+# os.makedirs(log_dir, exist_ok=True)
+# env = Monitor(env, log_dir)
 
 # ---------------- Callback functions
 callback_visdom = VisdomCallback(name='UR-gym', check_freq=10, log_dir=log_dir)
@@ -86,5 +88,6 @@ callback_save_best_model = EvalCallback(env, best_model_save_path=log_dir, log_p
                                         deterministic=True, n_eval_episodes=10, render=False)
 callback_list = CallbackList([callback_visdom, callback_save_best_model])
 
+# ---------------- Start Training
 model.learn(total_timesteps=timesteps, callback=callback_list)
 env.close()
