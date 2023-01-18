@@ -156,8 +156,8 @@ class ReachOri(Task):
         self.goal_range_high = np.array([0.7, 0.4, 0.6])
         self.action_weight = -1
         self.collision_weight = -500
-        self.distance_weight = -16
-        self.orientation_weight = -4
+        self.distance_weight = -14
+        self.orientation_weight = -6
         self.delta = 0.2
         self.collision = False
         self.link_dist = np.zeros(5)
@@ -191,15 +191,19 @@ class ReachOri(Task):
 
     def reset(self) -> None:
         self.collision = False
-        if self.test_goal.all() != np.zeros(7).all():
+        if np.array_equal(self.test_goal, np.zeros(7)):
+            self.goal = self._sample_goal()
+        else:
             self.goal = self.test_goal
             self.test_goal = np.zeros(7)
-        else:
-            self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
     def set_goal(self, new_goal):
         self.test_goal = new_goal
+
+    def set_reward(self):
+        self.distance_weight = -10
+        self.orientation_weight = -10
 
     def generate_testset(self):
         goal_range = self.goal_range_high - self.goal_range_low
@@ -210,10 +214,28 @@ class ReachOri(Task):
             for j in range(int(round(goal_range[1] * 20 + 1))):
                 for k in range(int(round(goal_range[2] * 20 + 1))):
                     for w in range(5):
-                        goal = self._sample_goal()
-                        goal[0] = i / 20 + self.goal_range_low[0]
-                        goal[1] = j / 20 + self.goal_range_low[1]
-                        goal[2] = k / 20 + self.goal_range_low[2]
+                        goal = save_goals[counter, :]
+                        valid = False
+                        tries = 0
+                        while valid is False:
+                            if tries > 0:
+                                print("retrying {} times".format(tries))
+                            tries += 1
+                            goal_pos = np.zeros(3)
+                            goal_pos[0] = i / 20 + self.goal_range_low[0]
+                            goal_pos[1] = j / 20 + self.goal_range_low[1]
+                            goal_pos[2] = k / 20 + self.goal_range_low[2]
+                            goal_rot = np.array(Quaternion.random().elements)
+                            goal = np.concatenate((goal_pos, np.roll(goal_rot, -1)))
+                            angles = ur5e.inverse(goal, False)
+                            if angles is None or np.max(np.abs(angles)) > 6.28:
+                                pass
+                            else:
+                                self.robot.set_joint_angles(angles)
+                                self.sim.step()
+                                valid = self.is_success(goal, self.get_achieved_goal())
+                        self.robot.reset()
+
                         save_goals[counter, :] = goal
                         counter += 1
 
