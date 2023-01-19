@@ -78,7 +78,7 @@ model = SAC("MultiInputPolicy", env=env, verbose=1)
 #     ),
 #     verbose=1)
 
-log_dir = "./RobotLearn/" + "SAC_Ori_Reg"
+log_dir = "./RobotLearn/" + "SAC_Ori_R1"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

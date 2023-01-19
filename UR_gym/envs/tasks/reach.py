@@ -294,13 +294,13 @@ class ReachOri(Task):
         # reward += self.collision_weight if self.collision else 0
 
         # ----------------New reward function 1---------------
-        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        #
-        # if du.size == 3:
-        #     reward += (-d/100) + 0.5 * np.cos(du[0]) * np.cos(du[1]) * np.cos(du[2])
-        # else:
-        #     reward += (-d / 100) + 0.5 * np.cos(du[:, 0]) * np.cos(du[:, 1]) * np.cos(du[:, 2])
+        d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+
+        if du.size == 3:
+            reward += -d + 50 * np.cos(du[0]) * np.cos(du[1]) * np.cos(du[2])
+        else:
+            reward += -d + 50 * np.cos(du[:, 0]) * np.cos(du[:, 1]) * np.cos(du[:, 2])
 
         # ----------------New reward function 2---------------
         # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))

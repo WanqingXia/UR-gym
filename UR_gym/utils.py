@@ -41,9 +41,7 @@ def angle_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 def quaternion_to_euler(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     assert a.shape == b.shape
     if len(a) == 7:
-        ae = R.from_quat(a[3:]).as_euler('xyz')
-        be = R.from_quat(b[3:]).as_euler('xyz')
-        return np.array(ae-be).astype(np.float32)
+        return np.array(R.from_quat(a[3:]).as_euler('xyz')-R.from_quat(b[3:]).as_euler('xyz')).astype(np.float32)
     else:
         return np.array([R.from_quat(row[0]).as_euler('xyz') - R.from_quat(row[1]).as_euler('xyz') for row in
                          zip(a[:, 3:], b[:, 3:])]).astype(np.float32)
