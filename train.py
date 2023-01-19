@@ -50,37 +50,37 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Load model and continue training
 
-timesteps = 2000000
-env = gymnasium.make("UR5OriReach-v1", render=True)
-check_env(env, warn=True)
-model = SAC.load("./RobotLearn/SAC_Ori_Reg/best_model", env=env)
-log_dir = "./RobotLearn/SAC_Ori_Reg"
-env = Monitor(env, log_dir)
+# timesteps = 2000000
+# env = gymnasium.make("UR5OriReach-v1", render=True)
+# check_env(env, warn=True)
+# model = SAC.load("./RobotLearn/SAC_Ori_Reg/best_model", env=env)
+# log_dir = "./RobotLearn/SAC_Ori_Reg"
+# env = Monitor(env, log_dir)
 
 
 # ---------------- Training from scratch
 
-# timesteps = 2000000
-# env = gymnasium.make("UR5OriReach-v1", render=True)
-# check_env(env, warn=True)
-#
-# model = SAC("MultiInputPolicy", env=env, verbose=1)
-# # model = SAC(
-# #     "MultiInputPolicy",
-# #     env,
-# #     replay_buffer_class=HerReplayBuffer,
-# #     # Parameters for HER
-# #     replay_buffer_kwargs=dict(
-# #         n_sampled_goal=4,
-# #         goal_selection_strategy="future",
-# #         online_sampling=True,
-# #         max_episode_length=100,
-# #     ),
-# #     verbose=1)
-#
-# log_dir = "./RobotLearn/" + "SAC_Ori_Reg"
-# os.makedirs(log_dir, exist_ok=True)
-# env = Monitor(env, log_dir)
+timesteps = 2000000
+env = gymnasium.make("UR5OriReach-v1", render=True)
+check_env(env, warn=True)
+
+model = SAC("MultiInputPolicy", env=env, verbose=1)
+# model = SAC(
+#     "MultiInputPolicy",
+#     env,
+#     replay_buffer_class=HerReplayBuffer,
+#     # Parameters for HER
+#     replay_buffer_kwargs=dict(
+#         n_sampled_goal=4,
+#         goal_selection_strategy="future",
+#         online_sampling=True,
+#         max_episode_length=100,
+#     ),
+#     verbose=1)
+
+log_dir = "./RobotLearn/" + "SAC_Ori_Reg"
+os.makedirs(log_dir, exist_ok=True)
+env = Monitor(env, log_dir)
 
 # ---------------- Callback functions
 callback_visdom = VisdomCallback(name='UR-gym', check_freq=10, log_dir=log_dir)

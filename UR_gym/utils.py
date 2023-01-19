@@ -1,6 +1,6 @@
 import numpy as np
 import warnings
-
+from scipy.spatial.transform import Rotation as R
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
@@ -35,5 +35,16 @@ def angle_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return (2 * np.arccos(np.clip(np.abs(np.sum(np.dot(a[3:], b[3:]))), -1, 1)) / np.pi).astype(np.float32)
     else:
         return np.array([2 * np.arccos(np.clip(np.abs(np.sum(np.dot(row[0], row[1]))), -1, 1)) / np.pi for row in
+                         zip(a[:, 3:], b[:, 3:])]).astype(np.float32)
+
+
+def quaternion_to_euler(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    assert a.shape == b.shape
+    if len(a) == 7:
+        ae = R.from_quat(a[3:]).as_euler('xyz')
+        be = R.from_quat(b[3:]).as_euler('xyz')
+        return np.array(ae-be).astype(np.float32)
+    else:
+        return np.array([R.from_quat(row[0]).as_euler('xyz') - R.from_quat(row[1]).as_euler('xyz') for row in
                          zip(a[:, 3:], b[:, 3:])]).astype(np.float32)
 

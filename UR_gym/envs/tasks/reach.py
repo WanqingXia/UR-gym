@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pyquaternion import Quaternion
 from UR_gym.envs.core import Task
-from UR_gym.utils import distance, angle_distance
+from UR_gym.utils import distance, angle_distance, quaternion_to_euler
 from ur_ikfast import ur_kinematics
 ur5e = ur_kinematics.URKinematics('ur5e')
 
@@ -275,22 +275,48 @@ class ReachOri(Task):
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
-        d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        dr = angle_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
 
-        """Distance Reward"""
-        # if d <= self.delta:
-        #     reward += 0.5 * np.square(d) * self.distance_weight
+        #----------------old reward function---------------
+        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        # dr = angle_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        # """Distance Reward"""
+        # # if d <= self.delta:
+        # #     reward += 0.5 * np.square(d) * self.distance_weight
+        # # else:
+        # #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+        #
+        # reward += np.abs(d) * self.distance_weight
+        # """Orientation Reward"""
+        # reward += np.abs(dr) * self.orientation_weight
+        # """Action Reward"""
+        # # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        # """Collision Reward"""
+        # reward += self.collision_weight if self.collision else 0
+
+        # ----------------New reward function 1---------------
+        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        #
+        # if du.size == 3:
+        #     reward += (-d/100) + 0.5 * np.cos(du[0]) * np.cos(du[1]) * np.cos(du[2])
         # else:
-        #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+        #     reward += (-d / 100) + 0.5 * np.cos(du[:, 0]) * np.cos(du[:, 1]) * np.cos(du[:, 2])
 
-        reward += np.abs(d) * self.distance_weight
-        """Orientation Reward"""
-        reward += np.abs(dr) * self.orientation_weight
-        """Action Reward"""
-        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-        """Collision Reward"""
-        reward += self.collision_weight if self.collision else 0
+        # ----------------New reward function 2---------------
+        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        #
+        # reward += 1 - np.tanh(d) + np.cos(np.max(du))
+
+        # ----------------New reward function 3---------------
+        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        #
+        # if du.size == 3:
+        #     reward += 1 - np.tanh(d) + 1/3 * (np.cos(du[0]) + np.cos(du[1]) + np.cos(du[2]))
+        # else:
+        #     reward += 1 - np.tanh(d) + 1/3 * (np.cos(du[:, 0]) + np.cos(du[:, 1]) + np.cos(du[:, 2]))
+
         return reward.astype(np.float32)
 
 
