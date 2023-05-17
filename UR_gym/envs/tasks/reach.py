@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pyquaternion import Quaternion
 from UR_gym.envs.core import Task
-from UR_gym.utils import distance, angle_distance, quaternion_to_euler
+from UR_gym.utils import distance, angle_distance, quaternion_to_euler, distanceIAI
 from ur_ikfast import ur_kinematics
 ur5e = ur_kinematics.URKinematics('ur5e')
 
@@ -13,7 +13,7 @@ class ReachIAI(Task):
         self,
         sim,
         get_ee_position,
-        distance_threshold=0.05,
+        distance_threshold=0.005,
         goal_range=0.8,
     ) -> None:
         super().__init__(sim)
@@ -64,7 +64,7 @@ class ReachIAI(Task):
         self.collision = False
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
+        d = distanceIAI(achieved_goal, desired_goal)
         return -d.astype(np.float32)
 
 
@@ -137,6 +137,133 @@ class ReachReg(Task):
             reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
         reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
         reward += self.collision_weight if self.collision else 0
+        return reward.astype(np.float32)
+
+
+class ReachOriOnly(Task):
+    # this task is created to test how hard it is for the robot to learn the orientation.
+    # thus we will set a constant position and random orientation
+    # the reward will be calculated only based on orientation as well
+    # all threshold remains the same
+    def __init__(
+        self,
+        sim,
+        robot,
+        distance_threshold=0.05,  # 5cm
+        angular_distance_threshold=0.05,  # 9 degrees
+    ) -> None:
+        super().__init__(sim)
+        self.distance_threshold = distance_threshold
+        self.angular_distance_threshold = angular_distance_threshold
+        self.robot = robot
+        self.goal_range_low = np.array([0.4, -0.4, 0.2])  # table width, table length, height
+        self.goal_range_high = np.array([0.7, 0.4, 0.6])
+        self.action_weight = -1
+        self.collision_weight = -500
+        self.distance_weight = -14
+        self.orientation_weight = -6
+        self.delta = 0.2
+        self.collision = False
+        self.link_dist = np.zeros(5)
+
+        self.test_goal = np.zeros(7)
+        with self.sim.no_rendering():
+            self._create_scene()
+            self.sim.place_visualizer(target_position=np.zeros(3), distance=2.0, yaw=60, pitch=-30)
+
+    def _create_scene(self) -> None:
+        self.sim.create_plane(z_offset=-1.04)
+        self.sim.create_table(length=1.1, width=1.8, height=0.92, x_offset=0.5, z_offset=-0.12)
+        self.sim.create_track(length=0.2, width=1.1, height=0.12, x_offset=0.0, z_offset=0.0)
+        self.sim.create_box(
+            body_name="target",
+            half_extents=np.ones(3) * 0.05 / 2,
+            mass=0.0,
+            ghost=True,
+            position=np.array([0.0, 0.0, 1.0]),
+            rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
+            texture=os.getcwd() + "/UR_gym/assets/colored_cube_heart.png",
+        )
+
+    def get_obs(self) -> np.ndarray:
+        return np.array(self.goal)
+
+    def get_achieved_goal(self) -> np.ndarray:
+        ee_position = np.array(self.robot.get_ee_position())
+        ee_orientation = np.array(self.robot.get_ee_orientation())
+        return np.concatenate((ee_position, ee_orientation))
+
+    def reset(self) -> None:
+        self.collision = False
+        if np.array_equal(self.test_goal, np.zeros(7)):
+            self.goal = self._sample_goal()
+        else:
+            self.goal = self.test_goal
+            self.test_goal = np.zeros(7)
+        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+
+    def set_goal(self, new_goal):
+        self.test_goal = new_goal
+
+    def set_reward(self):
+        self.distance_weight = -10
+        self.orientation_weight = -10
+
+    def _sample_goal(self) -> np.ndarray:
+        """Randomize goal."""
+        # Adding the goal verification code
+        valid = False
+        counter = 0
+        while valid is False:
+            if counter > 0:
+                print("retrying {} times".format(counter))
+            counter += 1
+            goal_pos = np.array([0.55, 0.0, 0.5])
+            goal_rot = np.array(Quaternion.random().elements)
+            goal = np.concatenate((goal_pos, np.roll(goal_rot, -1)))
+            angles = ur5e.inverse(goal, False)
+            if angles is None or np.max(np.abs(angles)) > 6.28:
+                pass
+            else:
+                self.robot.set_joint_angles(angles)
+                self.sim.step()
+                valid = self.is_success(goal, self.get_achieved_goal())
+        self.robot.reset()
+        # after reset, set the robot to wanted position and initial orientation
+        # self.robot.set_joint_angles(angles)
+        # self.sim.step()
+        return goal
+
+    def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
+        d = distance(achieved_goal, desired_goal)
+        dr = angle_distance(achieved_goal, desired_goal)
+        # print("distance: ", d, "angular distance: ", dr)
+        return np.array(d < self.distance_threshold and dr < self.angular_distance_threshold, dtype=np.bool8)
+
+    def check_collision(self) -> bool:
+        # self.collision = self.sim.check_collision()
+        self.collision = False
+
+    def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        reward = np.float32(0.0)
+
+        #----------------old reward function---------------
+        d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        dr = angle_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        """Distance Reward"""
+        # if d <= self.delta:
+        #     reward += 0.5 * np.square(d) * self.distance_weight
+        # else:
+        #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+
+        reward += np.abs(d) * self.distance_weight
+        """Orientation Reward"""
+        reward += np.abs(dr) * self.orientation_weight
+        """Action Reward"""
+        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        """Collision Reward"""
+        reward += self.collision_weight if self.collision else 0
+
         return reward.astype(np.float32)
 
 
@@ -277,45 +404,40 @@ class ReachOri(Task):
         reward = np.float32(0.0)
 
         #----------------old reward function---------------
-        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        # dr = angle_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        # """Distance Reward"""
-        # # if d <= self.delta:
-        # #     reward += 0.5 * np.square(d) * self.distance_weight
-        # # else:
-        # #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
-        #
-        # reward += np.abs(d) * self.distance_weight
-        # """Orientation Reward"""
-        # reward += np.abs(dr) * self.orientation_weight
-        # """Action Reward"""
-        # # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-        # """Collision Reward"""
-        # reward += self.collision_weight if self.collision else 0
+        d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        dr = angle_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        """Distance Reward"""
+        # if d <= self.delta:
+        #     reward += 0.5 * np.square(d) * self.distance_weight
+        # else:
+        #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+
+        reward += np.abs(d) * self.distance_weight
+        """Orientation Reward"""
+        reward += np.abs(dr) * self.orientation_weight
+        """Action Reward"""
+        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        """Collision Reward"""
+        reward += self.collision_weight if self.collision else 0
 
         # ----------------New reward function 1---------------
-        d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-
-        if du.size == 3:
-            reward += -d + 50 * np.cos(du[0]) * np.cos(du[1]) * np.cos(du[2])
-        else:
-            reward += -d + 50 * np.cos(du[:, 0]) * np.cos(du[:, 1]) * np.cos(du[:, 2])
-
-        # ----------------New reward function 2---------------
-        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        #
-        # reward += 1 - np.tanh(d) + np.cos(np.max(du))
-
-        # ----------------New reward function 3---------------
+        # this reward is from article "Collision-free path planning for a guava-harvesting robot based on
+        # recurrent deep reinforcement learning"
         # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
         # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
         #
         # if du.size == 3:
-        #     reward += 1 - np.tanh(d) + 1/3 * (np.cos(du[0]) + np.cos(du[1]) + np.cos(du[2]))
+        #     reward += -d + 50 * np.cos(du[0]) * np.cos(du[1]) * np.cos(du[2])
         # else:
-        #     reward += 1 - np.tanh(d) + 1/3 * (np.cos(du[:, 0]) + np.cos(du[:, 1]) + np.cos(du[:, 2]))
+        #     reward += -d + 50 * np.cos(du[:, 0]) * np.cos(du[:, 1]) * np.cos(du[:, 2])
+
+        # ----------------New reward function 2---------------
+        # this reward is from article "Reinforcement learning with prior policy guidance for motion planning
+        # of dual-arm free-floating space robot"
+        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        #
+        # reward += 1 - np.tanh(d) + np.cos(np.max(du))
 
         return reward.astype(np.float32)
 

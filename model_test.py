@@ -10,6 +10,8 @@ from UR_gym.utils import distance, angle_distance
 from tqdm import tqdm
 from ur_ikfast import ur_kinematics
 from UR_gym.utils import distance, angle_distance
+from pyquaternion import Quaternion
+
 
 
 def sig_handler(signal, frame):
@@ -19,15 +21,30 @@ def sig_handler(signal, frame):
 
 signal.signal(signal.SIGINT, sig_handler)
 
+def replace(new_points, trials, env, model):
+    for t in range(10):
+        rot = np.array(Quaternion.random().elements)
+        newp = np.concatenate((new_points[trials, :3], np.roll(rot, -1)))
+        env.task.set_goal(newp)
+        obs = env.reset()
+        for steps in range(100):
+            action, _states = model.predict(obs[0], deterministic=True)
+            obs = env.step(action)
+            if obs[2] and obs[4]['is_success']:
+                new_points[trials, :] = newp
+                return
+
 
 def test_RLmodel(points):
+    new_points = points.copy()
+    replace_enable = False
 
     # ---------------- Create environment
     env = gymnasium.make("UR5OriReach-v1", render=True)
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn/SAC_Ori_HER3/"
+    model_path = "RobotLearn/SAC_trial1/"
     model = SAC.load(model_path + "best_model", env=env)
     env.task.set_reward()
 
@@ -46,18 +63,22 @@ def test_RLmodel(points):
             rewards[trials] += obs[1]
             if steps == 99 or obs[2]:
                 success[trials] = obs[4]['is_success']
+                if obs[4]['is_success'] is False and replace_enable:
+                    replace(new_points, trials, env, model)
                 break
     env.close()
     success_rate = (np.sum(success) / success.size) * 100
     avg_reward = (np.sum(rewards) / rewards.size)
     print("The success rate is {}%".format(success_rate))
     print("The average reward is {}".format(avg_reward))
-    with open('best.txt', "w") as f:
+    with open(model_path + 'best.txt', "w") as f:
         f.write("The success rate is {}%\n".format(success_rate))
         f.write("The average reward is {}\n".format(avg_reward))
-        for num in rewards:
-            f.writelines(str(num) + '\n')
+        for num1, num2 in zip(rewards, success):
+            f.writelines(str(num1) + ', ' + str(num2) + '\n')
     f.close()
+
+    np.savetxt('new_testset.txt', new_points)
 
 
 def generate_ideal(points):
@@ -96,6 +117,6 @@ def generate_ideal(points):
 
 
 if __name__ == "__main__":
-    points = np.loadtxt('test_set.txt')
+    points = np.loadtxt('new_testset.txt')
     test_RLmodel(points)
     # generate_ideal(points)

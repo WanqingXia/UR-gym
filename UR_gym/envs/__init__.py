@@ -3,4 +3,5 @@ from UR_gym.envs.ur_tasks import (
     UR5RegReachEnv,
     UR5OriReachEnv,
     UR5ObsReachEnv,
+    UR5ReachOriOnlyEnv,
 )

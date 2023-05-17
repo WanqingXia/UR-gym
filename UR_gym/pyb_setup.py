@@ -395,7 +395,7 @@ class PyBullet:
                 if (link_num == 0) or (link_num == 6):
                     pass  # link 0 and 6 of robot can never collide
                 else:
-                    """need to use different  margin for obstacle"""
+                    """need to use different margin for obstacle"""
                     if objs == self._bodies_idx["obstacle"]:
                         # set margin to be a large number to make sure we always get data
                         info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
