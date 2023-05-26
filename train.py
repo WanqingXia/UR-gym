@@ -53,8 +53,8 @@ signal.signal(signal.SIGINT, sig_handler)
 # timesteps = 2000000
 # env = gymnasium.make("UR5OriReach-v1", render=True)
 # check_env(env, warn=True)
-# model = SAC.load("./RobotLearn/SAC_trial1/best_model", env=env)
-# log_dir = "./RobotLearn/SAC_trial1"
+# model = SAC.load("./RobotLearn/SAC_6_14/best_model", env=env)
+# log_dir = "./RobotLearn/SAC_6_14"
 # env = Monitor(env, log_dir)
 
 
@@ -82,7 +82,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "SAC_our_reward"
+log_dir = "./RobotLearn/" + "SAC_6_14"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

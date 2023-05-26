@@ -2,6 +2,7 @@ import pybullet as p
 import math
 from collections import namedtuple
 import os
+import time
 
 class RobotBase(object):
     """
@@ -231,4 +232,4 @@ if __name__ == "__main__":
     physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
     robot = UR5Robotiq85([0, 0, 0], [0, 0, 0])
     robot.load()
-    wait = 1
+    time.sleep(100)

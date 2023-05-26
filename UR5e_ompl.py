@@ -1,5 +1,7 @@
 import os.path as osp
 import os
+import time
+
 import pybullet as p
 import math
 from tqdm import tqdm
@@ -15,6 +17,9 @@ import numpy as np
 
 import pb_ompl
 
+##################################
+# Bug in C++ source code, this code is abandoned
+##################################
 
 class UR5e_ompl():
     def __init__(self):
@@ -34,7 +39,9 @@ class UR5e_ompl():
 
         # setup pb_ompl
         self.pb_ompl_interface = pb_ompl.PbOMPL(self.robot, self.obstacles)
-        self.pb_ompl_interface.set_planner("RRTConnect")
+        self.pb_ompl_interface.set_planner("PRM")
+        self.start = [0, -1.57, 0, 0, 0, 0]
+        self.goal = [0, 0, 0, 0, 0, 0]
 
         # add obstacles
         # self.add_obstacles()
@@ -57,51 +64,80 @@ class UR5e_ompl():
         self.obstacles.append(box_id)
         return box_id
 
-    def demo(self):
-        start = [0, -1.57, 0, 0, 0, 0]
-        goal = [0, 0, 0, 0, 0, 0]
+    def set_goal(self, goal):
+        self.goal = goal
 
-        self.robot.set_state(start)
-        res, path = self.pb_ompl_interface.plan(goal)
+    def solve(self):
+        self.robot.set_state(self.start)
+        res, path = self.pb_ompl_interface.plan(self.goal)
         if res:
-            self.pb_ompl_interface.execute(path, dynamics=True)
+            self.pb_ompl_interface.execute(path, dynamics=False)
         return res, path
 
 
 if __name__ == '__main__':
 
-    env = gymnasium.make("UR5OriReach-v1", render=True)
-    ur5e = ur_kinematics.URKinematics('ur5e')
+    # env = gymnasium.make("UR5OriReach-v1", render=True)
+    # ur5e = ur_kinematics.URKinematics('ur5e')
+    # initial = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
+    # points = np.loadtxt('new_testset.txt')
+    # success = np.zeros(points.shape[0])
+    # dist = np.zeros(points.shape[0])
+    #
+    # URompl = pb_ompl.PbOMPL(env.robot)
+    # URompl.set_planner("FMT")
+    #
+    # for trials in tqdm(range(points.shape[0])):
+    #     joints = initial.copy()
+    #     angles = ur5e.inverse((points[trials, :]), False)
+    #     env.task.set_goal(points[trials, :])
+    #     obs = env.reset()
+    #     if angles is None:
+    #         print("found one broken point")
+    #         continue
+    #
+    #     env.robot.set_state(joints)
+    #
+    #     res, path, solved = URompl.plan(angles)
+    #     if res:
+    #         print(str(solved))
+    #         URompl.execute(path, dynamics=False)
+    #         success[trials] = True
+    #         path = np.array(path)
+    #         for i in range(path.shape[0] - 1):
+    #             dist[trials] += np.sum(np.abs(path[i+1, :] - path[i, :]))
+    #     else:
+    #         pass
+    #
+    # success_rate = (np.sum(success) / success.size) * 100
+    # print("The success rate is {}%".format(success_rate))
+    # np.savetxt('RRTStar.txt', np.transpose(dist))
+
     initial = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
-    points = np.loadtxt('test_set.txt')
+    ur5e = ur_kinematics.URKinematics('ur5e')
+    points = np.loadtxt('new_testset.txt')
     success = np.zeros(points.shape[0])
     dist = np.zeros(points.shape[0])
-
-    pb_ompl_interface = pb_ompl.PbOMPL(env.robot)
-    pb_ompl_interface.set_planner("RRTConnect")
+    UR5 = UR5e_ompl()
 
     for trials in tqdm(range(points.shape[0])):
         joints = initial.copy()
         angles = ur5e.inverse((points[trials, :]), False)
-        env.task.set_goal(points[trials, :])
-        obs = env.reset()
         if angles is None:
             print("found one broken point")
             continue
-
-        env.robot.set_state(joints)
-        res, path = pb_ompl_interface.plan(angles)
+        UR5.set_goal(angles)
+        res, path = UR5.solve()
         if res:
-            pb_ompl_interface.execute(path, dynamics=False)
             success[trials] = True
             path = np.array(path)
             for i in range(path.shape[0] - 1):
-                dist[trials] = np.sum(np.abs(path[i+1, :] - path[i, :]))
+                dist[trials] += np.sum(np.abs(path[i+1, :] - path[i, :]))
         else:
             pass
 
-    success_rate = (np.sum(success) / success.size) * 100
-    print("The success rate is {}%".format(success_rate))
-    np.savetxt('RRTconnect.txt', np.transpose(dist))
+        success_rate = (np.sum(success) / success.size) * 100
+        print("The success rate is {}%".format(success_rate))
+        np.savetxt('RRTStar.txt', np.transpose(dist))
 
 

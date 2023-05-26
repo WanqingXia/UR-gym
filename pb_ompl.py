@@ -22,6 +22,10 @@ import copy
 INTERPOLATE_NUM = 100
 DEFAULT_PLANNING_TIME = 5.0
 
+##################################
+# Bug in C++ source code, this code is abandoned
+##################################
+
 class PbOMPLRobot():
     '''
     To use with Pb_OMPL. You need to construct a instance of this class and pass to PbOMPL.
@@ -137,9 +141,9 @@ class PbOMPL():
         self.ss = og.SimpleSetup(self.space)
         self.ss.setStateValidityChecker(ob.StateValidityCheckerFn(self.is_state_valid))
         self.si = self.ss.getSpaceInformation()
-        # self.si.setStateValidityCheckingResolution(0.005)
+        self.si.setStateValidityCheckingResolution(0.005)
         # self.collision_fn = pb_utils.get_collision_fn(self.robot_id, self.robot.joint_idx, self.obstacles, [], True, set(),
-        #                                                 custom_limits={}, max_distance=0, allow_collision_links=[])
+        #                                                  custom_limits={}, max_distance=0, allow_collision_links=[])
 
         self.set_obstacles(obstacles)
         self.set_planner("RRT") # RRT by default
@@ -227,9 +231,12 @@ class PbOMPL():
         # attempt to solve the problem within allowed planning time
         solved = False
         count = 0
-        while str(solved) != 'Exact solution':
+
+        for i in range(10):
             solved = self.ss.solve(allowed_time)
             count += 1
+            if str(solved) == 'Exact solution':
+                break
 
         print('Solving the path with {} seconds, {}'.format(count * 5, solved))
         res = False

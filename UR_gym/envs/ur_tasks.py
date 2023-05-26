@@ -2,7 +2,7 @@ import numpy as np
 
 from UR_gym.envs.core import RobotTaskEnv
 from UR_gym.envs.robots.UR5 import UR5, UR5Reg, UR5Ori
-from UR_gym.envs.tasks.reach import ReachIAI, ReachReg, ReachOri, ReachObs, ReachOriOnly
+from UR_gym.envs.tasks.reach import ReachIAI, ReachReg, ReachOri, ReachObs
 from UR_gym.pyb_setup import PyBullet
 
 
@@ -59,18 +59,4 @@ class UR5ObsReachEnv(RobotTaskEnv):
         sim = PyBullet(render=render)
         robot = UR5Ori(sim, block_gripper=True, base_position=np.array([0.0, 0.0, 0.0]))
         task = ReachObs(sim, robot=robot)
-        super().__init__(robot, task)
-
-
-class UR5ReachOriOnlyEnv(RobotTaskEnv):
-    """Reach task wih UR5 robot. (Added obstacle reward)
-
-    Args:
-        render (bool, optional): Activate rendering. Defaults to False.
-    """
-
-    def __init__(self, render: bool = False) -> None:
-        sim = PyBullet(render=render)
-        robot = UR5Ori(sim, block_gripper=True, base_position=np.array([0.0, 0.0, 0.0]))
-        task = ReachOriOnly(sim, robot=robot)
         super().__init__(robot, task)

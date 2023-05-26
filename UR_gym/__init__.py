@@ -28,10 +28,3 @@ register(
     max_episode_steps=100,
 )
 
-register(
-    id="UR5ReachOriOnly-v1",
-    entry_point="UR_gym.envs:UR5ReachOriOnlyEnv",
-    max_episode_steps=100,
-)
-
-
