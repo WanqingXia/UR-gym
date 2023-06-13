@@ -380,49 +380,62 @@ class PyBullet:
         return collision
 
     def check_collision_obs(self):
-        """Check the collision between workbench and UR5
+        """Check the collision between workbench and UR5, collision margin 1cm (0.01m)
 
-        Possible collisions: table with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
-                             track with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
-                             collision margin 1cm (0.01m)
+        Possible collisions: table with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
+                             track with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
+                             obstacle with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
+                             Link1 with Link 3, 4, 5, 6
+                             Link2 with Link 4, 5, 6
+                             Link3 with Link 5, 6
+                             Link 4, 5, 6 never collide with each other
         Print: link name that collides
         Return: collision (bool): Whether collision is occurred
         """
         collision = False
         link_dist = np.zeros(5)
-        for objs in [self._bodies_idx["table"], self._bodies_idx["track"], self._bodies_idx["obstacle"]]:
-            for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
-                if (link_num == 0) or (link_num == 6):
-                    pass  # link 0 and 6 of robot can never collide
-                else:
-                    """need to use different margin for obstacle"""
-                    if objs == self._bodies_idx["obstacle"]:
-                        # set margin to be a large number to make sure we always get data
-                        info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
-                                                  distance=5.0)
-                        collision |= (info[0][8] < 0.01)
-                        link_dist[link_num-1] = info[0][8]
-                        if info[0][8] < 0.01:
-                            print("Collision between link ", link_num, " and obstacle. Distance: ", info[0][8])
-                    else:
-                        info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
-                                                  distance=0.01)
-                        if info:  # distance smaller than 0.01m, collision occurs
-                            collision = True
-                            linkA = "None"
-                            if link_num == 1:
-                                linkA = "upper_arm_link"
-                            elif link_num == 2:
-                                linkA = "fore_arm_link"
-                            elif link_num == 3:
-                                linkA = "wrist_1_link"
-                            elif link_num == 4:
-                                linkA = "wrist_2_link"
-                            elif link_num == 5:
-                                linkA = "wrist_3_link"
+        link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
 
-                            linkB = "Table" if info[0][2] == 3 else "Track"
-                            print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[0][8])
+        # check collision between UR5 and obstacle
+        for link_num in range(2, 7):
+            # From link2-6 represents: upperarm link, forearm link, wrist1, wrist2, wrist3, verified in robot_show.py
+            # Link1 is the Shoulder which is fixed on the track and never collide
+
+            # set margin to be a large number to make sure we always get data to fill link_dist
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
+                                      distance=5.0)
+            link_dist[link_num - 2] = info[0][8]
+            if info[0][8] < 0.01:
+                collision = True
+                print("Collision between link ", link_list[link_num - 1], " and obstacle. Distance: ", info[0][8])
+
+        if collision:
+            # directly return if collision happens, skip checking for table and track
+            return collision, link_dist
+
+        # check collision between UR5 and table and track
+        for objs in [self._bodies_idx["table"], self._bodies_idx["track"]]:
+            for link_num in range(2, 7):
+                info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
+                                          distance=0.01)
+                if info:  # distance smaller than 0.01m, collision occurs
+                    collision = True
+                    linkB = "Table" if info[0][2] == 3 else "Track"
+                    print("Collision between ", link_list[link_num-1], " and ", linkB, ". Distance: ", info[0][8])
+        if collision:
+            # directly return if collision happens, skip checking for UR5 self-collision
+            return collision, link_dist
+
+        start = 3 # start from 3 and increase in every loop
+        for link_numA in range(1, 4):
+            for link_numB in range(start, 7):
+                info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["UR5"], linkIndexA=link_numA,
+                                          linkIndexB=link_numB, distance=0.01)
+                if info:  # distance smaller than 0.01m, collision occurs
+                    collision = True
+                    print("Collision between ", link_list[link_numA - 1],
+                          " and ", link_list[link_numB - 1], ". Distance: ", info[0][8])
+            start += 1
 
         return collision, link_dist
 

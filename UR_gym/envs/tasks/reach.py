@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pyquaternion import Quaternion
 from UR_gym.envs.core import Task
-from UR_gym.utils import distance, angle_distance, quaternion_to_euler
+from UR_gym.utils import distance_single, distance, angle_distance, quaternion_to_euler
 from ur_ikfast import ur_kinematics
 ur5e = ur_kinematics.URKinematics('ur5e')
 
@@ -64,7 +64,7 @@ class ReachIAI(Task):
         self.collision = False
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        d = distanceIAI(achieved_goal, desired_goal)
+        d = distance_single(achieved_goal, desired_goal)
         return -d.astype(np.float32)
 
 
@@ -214,6 +214,7 @@ class ReachOri(Task):
         self.orientation_weight = -10
 
     def generate_testset(self):
+        # enable this function in core.py to generate points
         goal_range = self.goal_range_high - self.goal_range_low
         rows = int(round((goal_range[0] * 20 + 1) * (goal_range[1] * 20 + 1) * (goal_range[2] * 20 + 1) * 5))
         save_goals = np.zeros((rows, 7))
@@ -247,7 +248,7 @@ class ReachOri(Task):
                         save_goals[counter, :] = goal
                         counter += 1
 
-        np.savetxt("test_set.txt", save_goals)
+        np.savetxt("testset_ori.txt", save_goals)
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
@@ -328,21 +329,23 @@ class ReachObs(Task):
         sim,
         robot,
         distance_threshold=0.05,
-        goal_range=0.8,
     ) -> None:
         super().__init__(sim)
         self.distance_threshold = distance_threshold
         self.robot = robot
-        self.goal_range_low = np.array([0.2, -goal_range / 2, 0])
-        self.goal_range_high = np.array([0.2 + goal_range / 2, goal_range / 2, goal_range])
-        self.action_weight = -10
-        self.collision_weight = -6
-        self.distance_weight = -100
+        self.goal_range_low = np.array([0.4, -0.4, 0.0])  # table width, table length, height
+        self.goal_range_high = np.array([0.7, 0.4, 0.2])
+        self.obs_range_low = np.array([0.4, -0.4, 0.4])  # table width, table length, height
+        self.obs_range_high = np.array([0.7, 0.4, 0.7])
+        self.action_weight = -1
+        self.collision_weight = -500
+        self.distance_weight = -20
+        self.obs_distance_weight = -10
         self.obstacle = np.zeros(3)
-        self.delta = 0.1
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
+        self.test_goal = np.zeros(6)
 
         with self.sim.no_rendering():
             self._create_scene()
@@ -368,9 +371,24 @@ class ReachObs(Task):
             position=np.array([0.0, 0.0, 1.0]),
             rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
         )
+        self.sim.create_box(
+            body_name="zone_goal",
+            half_extents=np.array([0.15, 0.4, 0.1]),
+            mass=0.0,
+            ghost=True,
+            position=np.array([0.55, 0.0, 0.1]),
+            rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
+        )
+        self.sim.create_box(
+            body_name="zone_obs",
+            half_extents=np.array([0.15, 0.4, 0.15]),
+            mass=0.0,
+            ghost=True,
+            position=np.array([0.55, 0.0, 0.55]),
+            rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
+        )
 
     def get_obs(self) -> np.ndarray:
-        # The environment checks for collision first then get obs so we can return the distance observation as well
         return np.concatenate((self.goal, self.obstacle, self.link_dist))
 
     def get_achieved_goal(self) -> np.ndarray:
@@ -378,13 +396,23 @@ class ReachObs(Task):
         return ee_position
 
     def reset(self) -> None:
-        self.goal = self._sample_goal()
-        self.obstacle = self._sample_obstacle()
-        self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-        self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
-        self.collision, self.link_dist = self.sim.check_collision_obs()
-        if self.collision:
-            print("Collision after reset, this should not happen")
+        self.collision = False
+        if np.array_equal(self.test_goal, np.zeros(6)):
+            self.goal = self._sample_goal()
+            self.obstacle = self._sample_obstacle()
+            self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+            self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
+            self.collision, self.link_dist = self.sim.check_collision_obs()
+            if self.collision:
+                print("Collision after reset, this should not happen")
+        else:
+            self.goal = self.test_goal[:3]
+            self.obstacle = self.test_goal[3:]
+            self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+            self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
+
+    def set_goal(self, new_goal):
+        self.test_goal = new_goal
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
@@ -394,16 +422,12 @@ class ReachObs(Task):
 
     def _sample_obstacle(self):
         """Randomize obstacle and keep it 30cm away from the goal."""
-        obstacle = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
-        while True:
-            if distance(obstacle, self.goal) < 0.3:
-                obstacle = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
-            else:
-                # obstacle = np.array([0.4, 0.4, 0.2]) # for testing, lock object position
-                return obstacle
+        obstacle = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
+        # obstacle = np.array([0.4, 0.4, 0.2]) # for testing, lock object position
+        return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
+        d = distance_single(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
@@ -412,14 +436,19 @@ class ReachObs(Task):
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
         reward = np.float32(0.0)
-        d = distance(achieved_goal, desired_goal)
 
-        if d <= self.delta:
-            reward += 0.5 * np.square(d) * self.distance_weight
-        else:
-            reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
-
-        reward += np.power((0.2 / (np.min(self.link_dist) + 0.2)), 8) * self.collision_weight
+        reward += np.abs(distance_single(achieved_goal, desired_goal)) * self.distance_weight
+        reward += np.power((0.2 / (np.min(self.link_dist) + 0.2)), 8) * self.obs_distance_weight
         reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-        # reward += self.collision_weight if self.collision else 0
+        reward += self.collision_weight if self.collision else 0
         return reward.astype(np.float32)
+
+    def generate_testset(self):
+        # enable this function in core.py to generate points
+        # 5000 points, first 3 columns for target position, last 3 columns for obstacle position
+        save_goals = np.zeros((5000, 6))
+        counter = 0
+        for counter in range(save_goals.shape[0]):
+            save_goals[counter, :3] = self._sample_goal()
+            save_goals[counter, 3:] = self._sample_obstacle()
+        np.savetxt("testset_obs.txt", save_goals)

@@ -2,6 +2,20 @@ import numpy as np
 import warnings
 from scipy.spatial.transform import Rotation as R
 
+def distance_single(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Compute the distance between two array. This function is vectorized.
+
+    Args:
+        a (np.ndarray): First array.
+        b (np.ndarray): Second array.
+
+    Returns:
+        np.ndarray: The distance between the arrays.
+    """
+    assert a.shape == b.shape
+    return np.linalg.norm(a - b, axis=-1).astype(np.float32)
+
+
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.

@@ -4,15 +4,32 @@ sys.modules["gym"] = gymnasium
 from stable_baselines3 import SAC, HerReplayBuffer, DDPG
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import CallbackList
-from stable_baselines3.common.callbacks import EvalCallback
+# from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.env_checker import check_env
-from utils.callbackFunctions import VisdomCallback
+from utils.callbackFunctions import EvalCallback
 from typing import Callable
 import UR_gym
 import os
 import numpy as np
 from datetime import datetime
 import signal
+import wandb
+
+epochs = 2000000
+learning_rate = 1e-4
+gamma = 0.95
+
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="RL_Obs",
+
+    # track hyperparameters and run metadata
+    config={
+        "learning_rate": learning_rate,
+        "architecture": "SAC",
+        "epochs": epochs,
+    }
+)
 
 
 def sig_handler(signal, frame):
@@ -60,8 +77,7 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Training from scratch
 
-timesteps = 2000000
-env = gymnasium.make("UR5OriReach-v1", render=True)
+env = gymnasium.make("UR5ObsReach-v1", render=True)
 check_env(env, warn=True)
 
 model = SAC(
@@ -77,21 +93,21 @@ model = SAC(
     ),
     verbose=1,
     buffer_size=int(1e7),
-    learning_rate=1e-4,
-    gamma=0.95,
+    learning_rate=learning_rate,
+    gamma=gamma,
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "SAC_6_14"
+log_dir = "./RobotLearn/" + "SAC_ori"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 
 # ---------------- Callback functions
-callback_visdom = VisdomCallback(name='UR-gym', check_freq=10, log_dir=log_dir)
-callback_save_best_model = EvalCallback(env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=1000,
+callback_save_best_model = EvalCallback(wandb, env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=1000,
                                         deterministic=True, n_eval_episodes=10, render=False)
-callback_list = CallbackList([callback_visdom, callback_save_best_model])
+callback_list = CallbackList([callback_save_best_model])
+
 
 # ---------------- Start Training
-model.learn(total_timesteps=timesteps, callback=callback_list)
+model.learn(total_timesteps=epochs, callback=callback_list)
 env.close()
