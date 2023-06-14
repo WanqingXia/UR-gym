@@ -345,6 +345,7 @@ class ReachObs(Task):
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
+        self.last_dist = np.zeros(5)
         self.test_goal = np.zeros(6)
 
         with self.sim.no_rendering():
@@ -403,6 +404,7 @@ class ReachObs(Task):
             self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
             self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
             self.collision, self.link_dist = self.sim.check_collision_obs()
+            self.last_dist = self.link_dist
             if self.collision:
                 print("Collision after reset, this should not happen")
         else:
@@ -410,6 +412,8 @@ class ReachObs(Task):
             self.obstacle = self.test_goal[3:]
             self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
             self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
+            self.collision, self.link_dist = self.sim.check_collision_obs()
+            self.last_dist = self.link_dist
 
     def set_goal(self, new_goal):
         self.test_goal = new_goal
@@ -417,13 +421,11 @@ class ReachObs(Task):
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
-        # goal = np.array([0.5, 0.1, 0.2]) # for testing, lock object position
         return goal
 
     def _sample_obstacle(self):
         """Randomize obstacle and keep it 30cm away from the goal."""
         obstacle = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
-        # obstacle = np.array([0.4, 0.4, 0.2]) # for testing, lock object position
         return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
@@ -437,17 +439,29 @@ class ReachObs(Task):
         # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
         reward = np.float32(0.0)
 
-        reward += np.abs(distance_single(achieved_goal, desired_goal)) * self.distance_weight
-        reward += np.power((0.2 / (np.min(self.link_dist) + 0.2)), 8) * self.obs_distance_weight
-        reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-        reward += self.collision_weight if self.collision else 0
+        # reward += np.abs(distance_single(achieved_goal, desired_goal)) * self.distance_weight
+        # reward += np.power((0.2 / (np.min(self.link_dist) + 0.2)), 8) * self.obs_distance_weight
+        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        # reward += self.collision_weight if self.collision else 0
+
+        # trying new reward
+        # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
+        distances = np.abs(distance_single(achieved_goal, desired_goal))
+        reward += np.where(distances < 0.05, 200, 0).astype(np.float32)
+        reward += -500 if self.collision else 0
+        reward += -100 * distances
+
+        # For the loop, we'll use numpy's vectorized operations
+        reward_changes = np.where(self.link_dist < 0.2, 100 * (self.link_dist - self.last_dist), 0)
+        reward += reward_changes.sum()  # sum up the rewards from all elements
+
+        self.last_dist = self.link_dist  # this line is already vectorized
         return reward.astype(np.float32)
 
     def generate_testset(self):
         # enable this function in core.py to generate points
         # 5000 points, first 3 columns for target position, last 3 columns for obstacle position
         save_goals = np.zeros((5000, 6))
-        counter = 0
         for counter in range(save_goals.shape[0]):
             save_goals[counter, :3] = self._sample_goal()
             save_goals[counter, 3:] = self._sample_obstacle()

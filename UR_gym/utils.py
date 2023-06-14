@@ -13,7 +13,8 @@ def distance_single(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         np.ndarray: The distance between the arrays.
     """
     assert a.shape == b.shape
-    return np.linalg.norm(a - b, axis=-1).astype(np.float32)
+    return np.sqrt(np.sum((a - b) ** 2, axis=-1)).astype(np.float32)
+    # return np.linalg.norm(a - b, axis=-1).astype(np.float32)
 
 
 

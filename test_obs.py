@@ -23,7 +23,7 @@ def test(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn2/SAC_obs/"
+    model_path = "RobotLearn2/SAC_newr/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
@@ -41,7 +41,7 @@ def test(points):
             if steps == 99 or obs[2]:
                 success[trials] = obs[4]['is_success']
                 break
-    time.sleep(3) # for viewing clearly
+    # time.sleep(3) # for viewing clearly
     env.close()
     success_rate = (np.sum(success) / success.size) * 100
     avg_reward = (np.sum(rewards) / rewards.size)
