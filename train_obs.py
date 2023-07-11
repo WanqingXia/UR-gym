@@ -32,6 +32,28 @@ wandb.init(
 )
 
 
+# def linear_schedule(initial_value: float) -> Callable[[float], float]:
+#     """
+#     Cosine learning rate schedule.
+#
+#     :param initial_value: Initial learning rate.
+#     :return: schedule that computes
+#       current learning rate depending on remaining progress
+#       warm-up from 1e-5 to 1e-3, then decrease to 1e-5
+#     """
+#     def func(progress_remaining: float) -> float:
+#         """
+#         Progress will decrease from 1 (beginning) to 0.
+#
+#         :param progress_remaining:
+#         :return: current learning rate
+#         """
+#
+#         return 0.99 * initial_value * progress_remaining + 0.01 * initial_value
+#
+#     return func
+
+
 def sig_handler(signal, frame):
     env.close()
     print("Existing Program...")
@@ -42,11 +64,11 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Load model and continue training
 
-# timesteps = 2000000
-# env = gymnasium.make("UR5OriReach-v1", render=True)
+# timesteps = 10000
+# env = gymnasium.make("UR5ObsReach-v1", render=True)
 # check_env(env, warn=True)
-# model = SAC.load("./RobotLearn/SAC_6_14/best_model", env=env)
-# log_dir = "./RobotLearn/SAC_6_14"
+# model = SAC.load("./RobotLearn2/SAC_continue/best_model", env=env)
+# log_dir = "./RobotLearn2/SAC_continue"
 # env = Monitor(env, log_dir)
 
 
@@ -65,7 +87,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn2/" + "SAC_newr"
+log_dir = "./RobotLearn2/" + "SAC_NewEnv13"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

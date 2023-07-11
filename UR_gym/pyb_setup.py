@@ -379,6 +379,14 @@ class PyBullet:
 
         return collision
 
+    def check_distance(self):
+        """
+        Check the distance between obstacle and goal, smaller than 10cm is not appropriate
+        :return: A bool value of whether the distance is smaller than 10cm
+        """
+        info = p.getClosestPoints(self._bodies_idx["target"], self._bodies_idx["obstacle"], distance=0.2)
+        return True if info else False
+
     def check_collision_obs(self):
         """Check the collision between workbench and UR5, collision margin 1cm (0.01m)
 

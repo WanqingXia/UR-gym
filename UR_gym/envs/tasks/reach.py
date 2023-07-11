@@ -333,20 +333,22 @@ class ReachObs(Task):
         super().__init__(sim)
         self.distance_threshold = distance_threshold
         self.robot = robot
-        self.goal_range_low = np.array([0.4, -0.4, 0.0])  # table width, table length, height
-        self.goal_range_high = np.array([0.7, 0.4, 0.2])
-        self.obs_range_low = np.array([0.4, -0.4, 0.4])  # table width, table length, height
-        self.obs_range_high = np.array([0.7, 0.4, 0.7])
+        self.goal_range_low = np.array([0.3, -0.5, -0.1])  # table width, table length, height
+        self.goal_range_high = np.array([0.75, 0.5, 0.2])
+        self.obs_range_low = np.array([0.3, -0.5, 0.25])  # table width, table length, height
+        self.obs_range_high = np.array([1.0, 0.5, 0.55])
         self.action_weight = -1
         self.collision_weight = -500
         self.distance_weight = -20
         self.obs_distance_weight = -10
-        self.obstacle = np.zeros(3)
+        self.obstacle = np.zeros(7)
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
-        self.test_goal = np.zeros(6)
+        self.test_goal = np.zeros(10)
+        self.cases = np.loadtxt('testset_hard.txt')
+        self.randnum = 0
 
         with self.sim.no_rendering():
             self._create_scene()
@@ -366,7 +368,7 @@ class ReachObs(Task):
         )
         self.sim.create_box(
             body_name="obstacle",
-            half_extents=np.ones(3) * 0.2 / 2,
+            half_extents=np.array([0.2, 0.05, 0.05]), # make the obstacle a rectangular shape
             mass=0.0,
             ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
@@ -374,19 +376,19 @@ class ReachObs(Task):
         )
         self.sim.create_box(
             body_name="zone_goal",
-            half_extents=np.array([0.15, 0.4, 0.1]),
+            half_extents=np.array([0.225, 0.5, 0.15]),
             mass=0.0,
             ghost=True,
-            position=np.array([0.55, 0.0, 0.1]),
+            position=np.array([0.525, 0.0, 0.05]),
             rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
         )
         self.sim.create_box(
             body_name="zone_obs",
-            half_extents=np.array([0.15, 0.4, 0.15]),
+            half_extents=np.array([0.35, 0.5, 0.15]),
             mass=0.0,
             ghost=True,
-            position=np.array([0.55, 0.0, 0.55]),
-            rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
+            position=np.array([0.65, 0.0, 0.4]),
+            rgba_color=np.array([1.0, 1.0, 1.0, 0.2]),
         )
 
     def get_obs(self) -> np.ndarray:
@@ -397,12 +399,16 @@ class ReachObs(Task):
         return ee_position
 
     def reset(self) -> None:
+        self.randnum = np.random.randint(0, 1000)
         self.collision = False
-        if np.array_equal(self.test_goal, np.zeros(6)):
-            self.goal = self._sample_goal()
-            self.obstacle = self._sample_obstacle()
-            self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-            self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
+        distance_fail = True
+        if np.array_equal(self.test_goal, np.zeros(10)):
+            while distance_fail:
+                self.goal = self._sample_goal()
+                self.obstacle = self._sample_obstacle()
+                self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+                self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
+                distance_fail = self.sim.check_distance()
             self.collision, self.link_dist = self.sim.check_collision_obs()
             self.last_dist = self.link_dist
             if self.collision:
@@ -411,7 +417,7 @@ class ReachObs(Task):
             self.goal = self.test_goal[:3]
             self.obstacle = self.test_goal[3:]
             self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-            self.sim.set_base_pose("obstacle", self.obstacle, np.array([0.0, 0.0, 0.0, 1.0]))
+            self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
             self.collision, self.link_dist = self.sim.check_collision_obs()
             self.last_dist = self.link_dist
 
@@ -421,11 +427,14 @@ class ReachObs(Task):
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
+        # goal = self.cases[self.randnum, :3]
         return goal
 
     def _sample_obstacle(self):
-        """Randomize obstacle and keep it 30cm away from the goal."""
-        obstacle = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
+        obstacle = np.zeros(7)
+        obstacle[:3] = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
+        obstacle[3:] = np.array(Quaternion.random().elements)
+        # obstacle = self.cases[self.randnum, 3:]
         return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
@@ -439,12 +448,6 @@ class ReachObs(Task):
         # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
         reward = np.float32(0.0)
 
-        # reward += np.abs(distance_single(achieved_goal, desired_goal)) * self.distance_weight
-        # reward += np.power((0.2 / (np.min(self.link_dist) + 0.2)), 8) * self.obs_distance_weight
-        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
-        # reward += self.collision_weight if self.collision else 0
-
-        # trying new reward
         # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
         distances = np.abs(distance_single(achieved_goal, desired_goal))
         reward += np.where(distances < 0.05, 200, 0).astype(np.float32)
@@ -457,12 +460,3 @@ class ReachObs(Task):
 
         self.last_dist = self.link_dist  # this line is already vectorized
         return reward.astype(np.float32)
-
-    def generate_testset(self):
-        # enable this function in core.py to generate points
-        # 5000 points, first 3 columns for target position, last 3 columns for obstacle position
-        save_goals = np.zeros((5000, 6))
-        for counter in range(save_goals.shape[0]):
-            save_goals[counter, :3] = self._sample_goal()
-            save_goals[counter, 3:] = self._sample_obstacle()
-        np.savetxt("testset_obs.txt", save_goals)

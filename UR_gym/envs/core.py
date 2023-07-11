@@ -234,7 +234,6 @@ class RobotTaskEnv(gym.Env):
         self.robot = robot
         self.task = task
         observation, _ = self.reset()  # required for init; seed can be changed later
-        # self.task.generate_testset()
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape
         desired_goal_shape = observation["achieved_goal"].shape

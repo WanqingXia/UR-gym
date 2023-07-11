@@ -34,7 +34,7 @@ class UR5(PyBulletRobot):
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
+        self.neutral_joint_values = np.array([0.0, -1.5708, 0.0, 0.0, 0.0, 0.0])
         self.ee_link = 6  # the id of ee_link
 
         """gripper related parameters, not used fro now"""
@@ -259,7 +259,7 @@ class UR5Ori(PyBulletRobot):
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
+        self.neutral_joint_values = np.array([0.0, -1.5708, 0.0, -1.5708, 0.0, 0.0])
         self.ee_link = 7  # the id of ee_link
         self.block_gripper = block_gripper
 

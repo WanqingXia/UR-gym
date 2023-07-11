@@ -23,10 +23,11 @@ def test(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn2/SAC_newr/"
+    model_path = "RobotLearn2/SAC_continue/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
+    num_steps = np.zeros(points.shape[0])
     success = np.zeros(points.shape[0])
     rewards = np.zeros(points.shape[0])
 
@@ -40,6 +41,7 @@ def test(points):
             rewards[trials] += obs[1]
             if steps == 99 or obs[2]:
                 success[trials] = obs[4]['is_success']
+                num_steps[trials] = steps
                 break
     # time.sleep(3) # for viewing clearly
     env.close()
@@ -50,11 +52,11 @@ def test(points):
     with open(model_path + 'best.txt', "w") as f:
         f.write("The success rate is {}%\n".format(success_rate))
         f.write("The average reward is {}\n".format(avg_reward))
-        for num1, num2 in zip(rewards, success):
-            f.writelines(str(num1) + ',' + str(num2) + '\n')
+        for num1, num2, num3 in zip(rewards, success, num_steps):
+            f.writelines(str(num1) + ' ,' + str(num2) + ' ,' + str(num3) + '\n')
     f.close()
 
 
 if __name__ == "__main__":
-    points = np.loadtxt('testset_obs.txt')
+    points = np.loadtxt('testset_normal.txt')
     test(points)
