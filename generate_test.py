@@ -23,7 +23,7 @@ def generate_hard():
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn2/SAC_NewEnv5/"
+    model_path = "RobotLearn2/SAC_NewEnv13/"
     model = SAC.load(model_path + "best_model", env=env)
 
     save_goals = np.zeros((1000, 10))
@@ -61,5 +61,5 @@ def generate_normal():
 
 
 if __name__ == "__main__":
-    generate_normal()
-    # generate_hard()
+    # generate_normal()
+    generate_hard()
