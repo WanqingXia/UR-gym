@@ -77,7 +77,7 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Training from scratch
 
-env = gymnasium.make("UR5ObsReach-v1", render=True)
+env = gymnasium.make("UR5OriReach-v1", render=True)
 check_env(env, warn=True)
 
 model = SAC(
@@ -89,7 +89,7 @@ model = SAC(
         n_sampled_goal=4,
         goal_selection_strategy="future",
         online_sampling=True,
-        max_episode_length=100,
+        # max_episode_length=100,
     ),
     verbose=1,
     buffer_size=int(1e7),
