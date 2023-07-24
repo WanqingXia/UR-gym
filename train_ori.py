@@ -70,8 +70,8 @@ signal.signal(signal.SIGINT, sig_handler)
 # timesteps = 2000000
 # env = gymnasium.make("UR5OriReach-v1", render=True)
 # check_env(env, warn=True)
-# model = SAC.load("./RobotLearn/SAC_6_14/best_model", env=env)
-# log_dir = "./RobotLearn/SAC_6_14"
+# model = SAC.load("./RobotLearn/SAC_New3/best_model", env=env)
+# log_dir = "./RobotLearn/SAC_New3"
 # env = Monitor(env, log_dir)
 
 
@@ -89,7 +89,7 @@ model = SAC(
         n_sampled_goal=4,
         goal_selection_strategy="future",
         online_sampling=True,
-        # max_episode_length=100,
+        max_episode_length=100,
     ),
     verbose=1,
     buffer_size=int(1e7),
@@ -98,7 +98,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "SAC_ori"
+log_dir = "./RobotLearn/" + "SAC_New4"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

@@ -284,7 +284,7 @@ class ReachOri(Task):
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
 
-        #----------------our reward function---------------
+        # ----------------our reward function---------------
         d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
         dr = angle_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
         """Distance Reward"""

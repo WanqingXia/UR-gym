@@ -44,7 +44,6 @@ def test(points):
             if steps == 99 or obs[2]:
                 success[trials] = obs[4]['is_success']
                 break
-        time.sleep(1)
     env.close()
     success_rate = (np.sum(success) / success.size) * 100
     avg_reward = (np.sum(rewards) / rewards.size)
