@@ -342,6 +342,7 @@ class ReachObs(Task):
         self.distance_weight = -20
         self.obs_distance_weight = -10
         self.obstacle = np.zeros(7)
+        self.obstacle_end = np.zeros(7)
         self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
@@ -406,9 +407,12 @@ class ReachObs(Task):
             while distance_fail:
                 self.goal = self._sample_goal()
                 self.obstacle = self._sample_obstacle()
+                self.obstacle_end = self._sample_obstacle()
                 self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
                 self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
                 distance_fail = self.sim.check_distance()
+                start_end_dist = distance(self.obstacle_end, self.obstacle)
+                distance_fail = distance_fail and (start_end_dist < 0.3)
             self.collision, self.link_dist = self.sim.check_collision_obs()
             self.last_dist = self.link_dist
             if self.collision:
@@ -433,7 +437,7 @@ class ReachObs(Task):
     def _sample_obstacle(self):
         obstacle = np.zeros(7)
         obstacle[:3] = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
-        obstacle[3:] = np.array(Quaternion.random().elements)
+        obstacle[3:] = np.roll(np.array(Quaternion.random().elements), -1)
         # obstacle = self.cases[self.randnum, 3:]
         return obstacle
 

@@ -301,6 +301,27 @@ class RobotTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
+        if self.spec.id == "UR5ObsReach-v1":
+            """
+            This function is used to control the movement of obstacle
+            The obstacle moves in a constant speed from start pose to end pose
+            When end pose is achieved, speed is set to zero
+            """
+            if np.linalg.norm(self.task.obstacle_end[:3] - self.sim.get_base_position("obstacle"),  axis=-1) > 0.05:
+                time_duration = 1
+                linear_velocity = (self.task.obstacle_end[:3] - self.task.obstacle[:3]) / time_duration
+                # Calculating the relative rotation from start to end orientation
+                relative_rotation = self.sim.get_quaternion_difference(self.task.obstacle[3:], self.task.obstacle_end[3:])
+                # Convert the relative rotation quaternion to axis-angle representation
+                axis, angle = self.sim.get_axis_angle(relative_rotation)
+                # Calculate the angular velocity required to achieve the rotation in 2 seconds
+                angular_velocity = np.array(axis) * angle / time_duration
+                self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+            else:
+                linear_velocity = np.zeros(3)
+                angular_velocity = np.zeros(3)
+                self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+
         self.sim.step()
         self.task.check_collision()
         observation = self._get_obs()

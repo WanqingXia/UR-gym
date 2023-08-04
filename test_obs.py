@@ -23,7 +23,7 @@ def test(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn2/SAC_NewEnv13/"
+    model_path = "RobotLearn2/SAC_Trained_Rotate/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
@@ -35,6 +35,7 @@ def test(points):
         env.task.set_goal(points[trials, :])
         obs = env.reset()
         for steps in range(100):
+            # time.sleep(0.2)
             action, _states = model.predict(obs[0], deterministic=True)
             obs = env.step(action)
             env.render()

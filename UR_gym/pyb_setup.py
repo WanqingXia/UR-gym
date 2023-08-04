@@ -326,6 +326,31 @@ class PyBullet:
         """
         self.physics_client.resetJointState(bodyUniqueId=self._bodies_idx[body], jointIndex=joint, targetValue=angle)
 
+    def set_velocity(self, body: str, linear_velocity, angular_velocity):
+        """Set the object velocity.
+
+        Args:
+            body (str): Body unique name.
+            linear_velocity (np.ndarray): List of linear velocity in three directions.
+            angular_velocity (np.ndarray): List of angular velocity in three directions.
+        """
+        self.physics_client.resetBaseVelocity(self._bodies_idx[body],
+                                              linearVelocity=linear_velocity, angularVelocity=angular_velocity)
+
+    def get_quaternion_difference(self, start_quaternion, end_quaternion):
+        """get the difference between quaternions.
+
+        Args:
+            :param start_quaternion: starting orientation
+            :param end_quaternion: ending orientation
+        """
+
+        return self.physics_client.getDifferenceQuaternion(start_quaternion, end_quaternion)
+
+    def get_axis_angle(self, relative_rotation):
+
+        return self.physics_client.getAxisAngleFromQuaternion(relative_rotation)
+
     def control_joints(self, body: str, joints: np.ndarray, target_angles: np.ndarray, forces: np.ndarray) -> None:
         """Control the joints motor.
 
