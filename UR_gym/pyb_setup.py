@@ -410,13 +410,13 @@ class PyBullet:
 
         return collision
 
-    def check_distance(self):
+    def check_target_obstacle_distance(self):
         """
         Check the distance between obstacle and goal, smaller than 10cm is not appropriate
         :return: A bool value of whether the distance is smaller than 10cm
         """
-        info = p.getClosestPoints(self._bodies_idx["target"], self._bodies_idx["obstacle"], distance=0.2)
-        return True if info else False
+        info = p.getClosestPoints(self._bodies_idx["target"], self._bodies_idx["obstacle"], distance=5)
+        return info[0][8]
 
     def check_collision_obs(self):
         """Check the collision between workbench, obstacle and UR5, collision margin 1cm (0.01m)
@@ -478,7 +478,38 @@ class PyBullet:
 
         return collision, link_dist
 
+    def check_distance_obs(self):
+        """Check the distance between workbench, obstacle and UR5, collision margin 1cm (0.01m)
+
+        Return: link_dist (arr): Array of robot links to any obstacle
+        """
+        link_dist = np.zeros(5)
+        link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
+
+        # check collision between UR5 and obstacle
+        for link_num in range(2, 7):
+            # From link2-6 represents: upperarm link, forearm link, wrist1, wrist2, wrist3, verified in robot_show.py
+            # Link1 is the Shoulder which is fixed on the track and never collide
+
+            # set margin to be a large number to make sure we always get data to fill link_dist
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
+                                      distance=5.0)
+            dist_temp = info[0][8]
+
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["track"], linkIndexA=link_num,
+                                      distance=5.0)
+            dist_temp = info[0][8] if dist_temp > info[0][8] else dist_temp
+
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["table"], linkIndexA=link_num,
+                                      distance=5.0)
+            dist_temp = info[0][8] if dist_temp > info[0][8] else dist_temp
+
+            link_dist[link_num - 2] = dist_temp
+
+        return link_dist
+
     def inverse_kinematics(self, body: str, link: int, position: np.ndarray, orientation: np.ndarray) -> np.ndarray:
+        "Do NOT use this function, the solution is not accurate"
         """Compute the inverse kinematics and return the new joint state.
 
         Args:
@@ -804,6 +835,67 @@ class PyBullet:
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
         )
+
+    def create_target(
+            self,
+            body_name: str,
+            half_extents: np.ndarray,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False, # disabled
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
+            texture: Optional[str] = None,
+    ) -> None:
+        """Create a geometry.
+
+        Args:
+            body_name (str): The name of the body. Must be unique in the sim.
+            geom_type (int): The geometry type. See self.physics_client.GEOM_<shape>.
+            mass (float, optional): The mass in kg. Defaults to 0.
+            position (np.ndarray, optional): The position, as (x, y, z). Defaults to [0, 0, 0].
+            ghost (bool, optional): Whether the body can collide. Defaults to False.
+            lateral_friction (float or None, optional): Lateral friction. If None, use the default pybullet
+                value. Defaults to None.
+            spinning_friction (float or None, optional): Spinning friction. If None, use the default pybullet
+                value. Defaults to None.
+            visual_kwargs (dict, optional): Visual kwargs. Defaults to {}.
+            collision_kwargs (dict, optional): Collision kwargs. Defaults to {}.
+        """
+        position = position if position is not None else np.zeros(3)
+
+        rgba_color = rgba_color if rgba_color is not None else np.zeros(4)
+        specular_color = specular_color if specular_color is not None else np.zeros(3)
+        visual_kwargs = {
+            "halfExtents": half_extents,
+            "specularColor": specular_color,
+            "rgbaColor": rgba_color,
+        }
+        collision_kwargs = {"halfExtents": half_extents}
+        geom_type = self.physics_client.GEOM_BOX
+
+        baseVisualShapeIndex = self.physics_client.createVisualShape(geom_type, **visual_kwargs)
+        baseCollisionShapeIndex = self.physics_client.createCollisionShape(geom_type, **collision_kwargs)
+
+        self._bodies_idx[body_name] = self.physics_client.createMultiBody(
+            baseVisualShapeIndex=baseVisualShapeIndex,
+            baseCollisionShapeIndex=baseCollisionShapeIndex,
+            baseMass=mass,
+            basePosition=position,
+        )
+        self.physics_client.setCollisionFilterGroupMask(self._bodies_idx[body_name], -1, 0, 0)
+
+        if lateral_friction is not None:
+            self.set_lateral_friction(body=body_name, link=-1, lateral_friction=lateral_friction)
+        if spinning_friction is not None:
+            self.set_spinning_friction(body=body_name, link=-1, spinning_friction=spinning_friction)
+
+        if texture is not None:
+            texture_path = os.path.join(UR_gym.assets.get_data_path(), texture)
+            texture_uid = self.physics_client.loadTexture(texture_path)
+            self.physics_client.changeVisualShape(self._bodies_idx[body_name], -1, textureUniqueId=texture_uid)
 
     def create_ab(self):
         self.create_box(

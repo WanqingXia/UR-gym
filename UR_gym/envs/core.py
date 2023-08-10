@@ -301,34 +301,35 @@ class RobotTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
-        if self.spec.id == "UR5ObsReach-v1":
-            """
-            This function is used to control the movement of obstacle
-            The obstacle moves in a constant speed from start pose to end pose
-            When end pose is achieved, speed is set to zero
-            """
-            if np.linalg.norm(self.task.obstacle_end[:3] - self.sim.get_base_position("obstacle"),  axis=-1) > 0.05:
-                time_duration = 1
-                linear_velocity = (self.task.obstacle_end[:3] - self.task.obstacle[:3]) / time_duration
-                # Calculating the relative rotation from start to end orientation
-                relative_rotation = self.sim.get_quaternion_difference(self.task.obstacle[3:], self.task.obstacle_end[3:])
-                # Convert the relative rotation quaternion to axis-angle representation
-                axis, angle = self.sim.get_axis_angle(relative_rotation)
-                # Calculate the angular velocity required to achieve the rotation in 2 seconds
-                angular_velocity = np.array(axis) * angle / time_duration
-                self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
-            else:
-                linear_velocity = np.zeros(3)
-                angular_velocity = np.zeros(3)
-                self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+        # if self.spec.id == "UR5ObsReach-v1":
+        #     """
+        #     This function is used to control the movement of obstacle
+        #     The obstacle moves in a constant speed from start pose to end pose
+        #     When end pose is achieved, speed is set to zero
+        #     """
+        #     if np.linalg.norm(self.task.obstacle[:3] - self.sim.get_base_position("obstacle"),  axis=-1) > 0.05:
+        #         time_duration = 1
+        #         linear_velocity = (self.task.obstacle[:3] - self.task.obstacle_end[:3]) / time_duration
+        #         # Calculating the relative rotation from start to end orientation
+        #         relative_rotation = self.sim.get_quaternion_difference(self.task.obstacle_end[3:], self.task.obstacle[3:])
+        #         # Convert the relative rotation quaternion to axis-angle representation
+        #         axis, angle = self.sim.get_axis_angle(relative_rotation)
+        #         # Calculate the angular velocity required to achieve the rotation in 2 seconds
+        #         angular_velocity = np.array(axis) * angle / time_duration
+        #         angular_velocity = np.zeros(3)
+        #         self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+        #     else:
+        #         linear_velocity = np.zeros(3)
+        #         angular_velocity = np.zeros(3)
+        #         self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
 
         self.sim.step()
-        self.task.check_collision()
+        collision, _ = self.sim.check_collision_obs()
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
-        terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or self.task.collision)
+        terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or collision)
         truncated = False
-        info = {"is_success": not self.task.collision if terminated else terminated}
+        info = {"is_success": not collision if terminated else terminated}
         reward = float(self.task.compute_reward(observation["achieved_goal"], self.task.get_goal(), info))
         return observation, reward, terminated, truncated, info
 

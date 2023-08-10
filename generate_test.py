@@ -57,9 +57,9 @@ def generate_normal():
         obs = env.task.get_obs()
         save_goals[counter, :3] = obs[:3]
         save_goals[counter, 3:] = obs[3:10]
-    np.savetxt("testset_normal.txt", save_goals)
+    np.savetxt("testset_new.txt", save_goals)
 
 
 if __name__ == "__main__":
-    # generate_normal()
-    generate_hard()
+    generate_normal()
+    # generate_hard()

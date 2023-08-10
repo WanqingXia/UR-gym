@@ -23,7 +23,7 @@ def test(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn2/SAC_Trained_Rotate/"
+    model_path = "RobotLearn2/SAC_Trained_Linear/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
@@ -32,10 +32,10 @@ def test(points):
     rewards = np.zeros(points.shape[0])
 
     for trials in tqdm(range(success.size)):
-        env.task.set_goal(points[trials, :])
+        env.task.set_goal_and_obstacle(points[trials, :])
         obs = env.reset()
         for steps in range(100):
-            # time.sleep(0.2)
+            time.sleep(0.04)
             action, _states = model.predict(obs[0], deterministic=True)
             obs = env.step(action)
             env.render()
@@ -44,7 +44,7 @@ def test(points):
                 success[trials] = obs[4]['is_success']
                 num_steps[trials] = steps
                 break
-    # time.sleep(3) # for viewing clearly
+    time.sleep(3) # for viewing clearly
     env.close()
     success_rate = (np.sum(success) / success.size) * 100
     avg_reward = (np.sum(rewards) / rewards.size)
@@ -59,5 +59,5 @@ def test(points):
 
 
 if __name__ == "__main__":
-    points = np.loadtxt('testset_normal.txt')
+    points = np.loadtxt('testset_new.txt')
     test(points)

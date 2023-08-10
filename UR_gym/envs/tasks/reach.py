@@ -347,7 +347,7 @@ class ReachObs(Task):
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
-        self.test_goal = np.zeros(10)
+        self.test_data = np.zeros(10)
         self.cases = np.loadtxt('testset_hard.txt')
         self.randnum = 0
 
@@ -369,7 +369,7 @@ class ReachObs(Task):
         )
         self.sim.create_box(
             body_name="obstacle",
-            half_extents=np.array([0.2, 0.05, 0.05]), # make the obstacle a rectangular shape
+            half_extents=np.array([0.2, 0.05, 0.05]),  # make the obstacle a rectangular shape
             mass=0.0,
             ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
@@ -403,30 +403,38 @@ class ReachObs(Task):
         self.randnum = np.random.randint(0, 1000)
         self.collision = False
         distance_fail = True
-        if np.array_equal(self.test_goal, np.zeros(10)):
+        if np.array_equal(self.test_data, np.zeros(10)):
             while distance_fail:
                 self.goal = self._sample_goal()
                 self.obstacle = self._sample_obstacle()
                 self.obstacle_end = self._sample_obstacle()
                 self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
                 self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
-                distance_fail = self.sim.check_distance()
-                start_end_dist = distance(self.obstacle_end, self.obstacle)
-                distance_fail = distance_fail and (start_end_dist < 0.3)
+                distance_fail = self.sim.check_target_obstacle_distance() < 0.1
+                # start_end_dist = distance(self.obstacle_end, self.obstacle)
+                # distance_fail = distance_fail and (start_end_dist < 0.3)
             self.collision, self.link_dist = self.sim.check_collision_obs()
             self.last_dist = self.link_dist
             if self.collision:
                 print("Collision after reset, this should not happen")
         else:
-            self.goal = self.test_goal[:3]
-            self.obstacle = self.test_goal[3:]
+            self.goal = self.test_data[:3]
+            self.obstacle_end = self.test_data[3:]
+
+            start_end_dist = 0
+            while start_end_dist < 0.3:
+                self.obstacle = self._sample_obstacle()
+                start_end_dist = distance(self.obstacle_end, self.obstacle)
+            # set the rotation for obstacle to same value for linear movement
+            self.obstacle[3:] = self.obstacle_end[3:]
             self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-            self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
+            # set final pose to keep the environment constant
+            self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
             self.collision, self.link_dist = self.sim.check_collision_obs()
             self.last_dist = self.link_dist
 
-    def set_goal(self, new_goal):
-        self.test_goal = new_goal
+    def set_goal_and_obstacle(self, data):
+        self.test_data = data
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
