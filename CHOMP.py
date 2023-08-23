@@ -7,7 +7,7 @@ from UR_gym.pyb_setup import PyBullet
 import numpy as np
 from pyquaternion import Quaternion
 from ur_ikfast import ur_kinematics
-"Have to change robot configuration in urdf from 0->3.141592653589793"
+"Have to change robot configuration in urdf from 0->3.141592653589793 Line 230"
 
 
 class UR5e_CHOMP():
@@ -146,7 +146,7 @@ class UR5e_CHOMP():
 
 if __name__ == '__main__':
     CHOMP = UR5e_CHOMP()
-
+    CHOMP.robot.reset()
     # initial_trajectory = CHOMP.initialize_trajectory()
     # trajectory = CHOMP.chomp_gradient_descent(initial_trajectory)
     # # what = CHOMP.ur5e.forward([-0.28394961, -1.32822716, -0.59661657, -1.06940711,  0.25196928, -0.11292072])
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     # CHOMP.sim.set_base_pose("target", CHOMP.pose[:3], CHOMP.pose[3:])
     # 
     angles = CHOMP.compute_inverse_kinematics([0.32, 0, 0.2, 1, 0, 0, 0])
-    # # angles = CHOMP.compute_inverse_kinematics(CHOMP.pose)
+    angles = [0, 0, 0, 0, 0, 0]
     CHOMP.robot.set_joint_angles(angles)
     # 
     # # problem identified, the robot simulation got accuracy problem.

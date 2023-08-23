@@ -363,7 +363,7 @@ class ReachObs(Task):
             body_name="target",
             radius=0.02,
             mass=0.0,
-            ghost=True,
+            ghost=False,
             position=np.zeros(3),
             rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )

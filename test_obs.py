@@ -17,7 +17,7 @@ def sig_handler(signal, frame):
 signal.signal(signal.SIGINT, sig_handler)
 
 
-def test(points):
+def test_robot(points):
     # ---------------- Create environment
     env = gymnasium.make("UR5ObsReach-v1", render=True)
 
@@ -60,4 +60,4 @@ def test(points):
 
 if __name__ == "__main__":
     points = np.loadtxt('testset_new.txt')
-    test(points)
+    test_robot(points)
