@@ -28,3 +28,8 @@ register(
     max_episode_steps=100,
 )
 
+register(
+    id="UR5DynReach-v1",
+    entry_point="UR_gym.envs:UR5ObsReachEnv",
+    max_episode_steps=100,
+)

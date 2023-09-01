@@ -228,7 +228,7 @@ class PyBullet:
         position = self.physics_client.getLinkState(self._bodies_idx[body], link)[0]
         return np.array(position)
 
-    def get_link_orientation(self, body: str, link: int) -> np.ndarray:
+    def get_link_orientation(self, body: str, link: int, type: str = "euler") -> np.ndarray:
         """Get the orientation of the link of the body.
 
         Args:
@@ -239,7 +239,14 @@ class PyBullet:
             np.ndarray: The quaternion rotation, as (rx, ry, rz, w).
         """
         orientation = self.physics_client.getLinkState(self._bodies_idx[body], link)[1]
-        return np.array(orientation)
+
+        if type == "euler":
+            rotation = self.physics_client.getEulerFromQuaternion(orientation)
+            return np.array(rotation)
+        elif type == "quaternion":
+            return np.array(orientation)
+        else:
+            raise ValueError("""type must be "euler" or "quaternion".""")
 
     def get_link_velocity(self, body: str, link: int) -> np.ndarray:
         """Get the velocity of the link of the body.
@@ -393,11 +400,13 @@ class PyBullet:
                     collision = True
                     linkB = "Table" if info[0][2] == 3 else "Track"
                     print("Collision between ", link_list[link_num-1], " and ", linkB, ". Distance: ", info[0][8])
+
         if collision:
             # directly return if collision happens, skip checking for UR5 self-collision
             return collision
 
-        start = 3 # start from 3 and increase in every loop
+        # check collision for UR5 self-collision
+        start = 3  # start from 3 and increase in every loop
         for link_numA in range(1, 4):
             for link_numB in range(start, 7):
                 info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["UR5"], linkIndexA=link_numA,
@@ -410,7 +419,7 @@ class PyBullet:
 
         return collision
 
-    def check_target_obstacle_distance(self):
+    def get_target_to_obstacle_distance(self):
         """
         Check the distance between obstacle and goal, smaller than 10cm is not appropriate
         :return: A bool value of whether the distance is smaller than 10cm
@@ -418,73 +427,12 @@ class PyBullet:
         info = p.getClosestPoints(self._bodies_idx["target"], self._bodies_idx["obstacle"], distance=5)
         return info[0][8]
 
-    def check_collision_obs(self):
-        """Check the collision between workbench, obstacle and UR5, collision margin 1cm (0.01m)
-
-        Possible collisions: table with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
-                             track with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
-                             obstacle with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
-                             Link1 with Link 3, 4, 5, 6
-                             Link2 with Link 4, 5, 6
-                             Link3 with Link 5, 6
-                             Link 4, 5, 6 never collide with each other
-        Print: link name that collides
-        Return: collision (bool): Whether collision is occurred
-        """
-        collision = False
-        link_dist = np.zeros(5)
-        link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
-
-        # check collision between UR5 and obstacle
-        for link_num in range(2, 7):
-            # From link2-6 represents: upperarm link, forearm link, wrist1, wrist2, wrist3, verified in robot_show.py
-            # Link1 is the Shoulder which is fixed on the track and never collide
-
-            # set margin to be a large number to make sure we always get data to fill link_dist
-            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
-                                      distance=5.0)
-            link_dist[link_num - 2] = info[0][8]
-            if info[0][8] < 0.01:
-                collision = True
-                print("Collision between link ", link_list[link_num - 1], " and obstacle. Distance: ", info[0][8])
-
-        if collision:
-            # directly return if collision happens, skip checking for table and track
-            return collision, link_dist
-
-        # check collision between UR5 and table and track
-        for objs in [self._bodies_idx["table"], self._bodies_idx["track"]]:
-            for link_num in range(2, 7):
-                info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
-                                          distance=0.01)
-                if info:  # distance smaller than 0.01m, collision occurs
-                    collision = True
-                    linkB = "Table" if info[0][2] == 3 else "Track"
-                    print("Collision between ", link_list[link_num-1], " and ", linkB, ". Distance: ", info[0][8])
-        if collision:
-            # directly return if collision happens, skip checking for UR5 self-collision
-            return collision, link_dist
-
-        start = 3 # start from 3 and increase in every loop
-        for link_numA in range(1, 4):
-            for link_numB in range(start, 7):
-                info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["UR5"], linkIndexA=link_numA,
-                                          linkIndexB=link_numB, distance=0.01)
-                if info:  # distance smaller than 0.01m, collision occurs
-                    collision = True
-                    print("Collision between ", link_list[link_numA - 1],
-                          " and ", link_list[link_numB - 1], ". Distance: ", info[0][8])
-            start += 1
-
-        return collision, link_dist
-
-    def check_distance_obs(self):
+    def get_link_distances(self):
         """Check the distance between workbench, obstacle and UR5, collision margin 1cm (0.01m)
 
         Return: link_dist (arr): Array of robot links to any obstacle
         """
         link_dist = np.zeros(5)
-        link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
 
         # check collision between UR5 and obstacle
         for link_num in range(2, 7):

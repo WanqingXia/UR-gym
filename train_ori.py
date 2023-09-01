@@ -89,7 +89,7 @@ model = SAC(
         n_sampled_goal=4,
         goal_selection_strategy="future",
         online_sampling=True,
-        max_episode_length=100,
+        # max_episode_length=100,
     ),
     verbose=1,
     buffer_size=int(1e7),

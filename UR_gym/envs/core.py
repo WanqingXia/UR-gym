@@ -109,7 +109,7 @@ class PyBulletRobot(ABC):
         Returns:
             np.ndarray: Rotation as (x, y, z, w)
         """
-        return self.sim.get_link_orientation(self.body_name, link)
+        return self.sim.get_link_orientation(self.body_name, link, "euler")
 
     def get_link_angular_velocity(self, link: int) -> np.ndarray:
         """Returns the velocity of a link as (wx, wy, wz)
@@ -324,7 +324,7 @@ class RobotTaskEnv(gym.Env):
         #         self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
 
         self.sim.step()
-        collision, _ = self.sim.check_collision_obs()
+        collision = self.sim.check_collision()
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or collision)

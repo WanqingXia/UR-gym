@@ -7,7 +7,7 @@ from UR_gym.pyb_setup import PyBullet
 import numpy as np
 from pyquaternion import Quaternion
 from ur_ikfast import ur_kinematics
-"Have to change robot configuration in urdf from 0->3.141592653589793 Line 230"
+"Have to change robot configuration in urdf from 0->3.141592653589793 Line 230 since the ur_ikfast is different from the urdf."
 
 
 class UR5e_CHOMP():
@@ -178,7 +178,6 @@ if __name__ == '__main__':
     # what = CHOMP.pose
     # a = CHOMP.robot.get_obs()
     # # t = CHOMP.pose
-
 
     stop = 1
 

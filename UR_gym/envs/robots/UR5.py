@@ -317,6 +317,7 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
+        # TODO: currently, every timestamp is 0.1s, may need to change on real robot
         arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.3 rad everytime
         # get the current position and the target position
         current_arm_joint_angles = np.array(self.get_joint_angles())
@@ -327,10 +328,8 @@ class UR5Ori(PyBulletRobot):
         # end-effector position, orientation and velocity
         ee_position = np.array(self.get_ee_position())
         ee_orientation = np.array(self.get_ee_orientation())
-        # ee_velocity = np.array(self.get_ee_velocity())
         joint_angles = np.array(self.get_joint_angles())
-        observation = np.concatenate((ee_position, ee_orientation, joint_angles))
-        return observation
+        return np.concatenate((ee_position, ee_orientation, joint_angles))
 
     def reset(self) -> None:
         self.set_joint_neutral()
@@ -344,7 +343,7 @@ class UR5Ori(PyBulletRobot):
         return self.get_link_position(self.ee_link)
 
     def get_ee_orientation(self) -> np.ndarray:
-        """Returns the orientation of the end-effector as (x, y, z, real)"""
+        """Returns the orientation of the end-effector as euler(x, y, z)"""
         return self.get_link_orientation(self.ee_link)
 
     def get_ee_velocity(self) -> np.ndarray:
