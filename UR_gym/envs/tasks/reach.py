@@ -250,6 +250,7 @@ class ReachOri(Task):
     def check_collision(self) -> bool:
         self.collision = self.sim.check_collision()
         # self.collision = False
+        return self.collision
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         reward = np.float32(0.0)
@@ -298,10 +299,9 @@ class ReachObs(Task):
         self,
         sim,
         robot,
-        distance_threshold=0.05,
     ) -> None:
         super().__init__(sim)
-        self.distance_threshold = distance_threshold
+        self.distance_threshold = 0.05
         self.robot = robot
         self.goal_range_low = np.array([0.3, -0.5, -0.1])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
@@ -309,17 +309,12 @@ class ReachObs(Task):
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
         self.action_weight = -1
         self.collision_weight = -500
-        self.distance_weight = -20
-        self.obs_distance_weight = -10
-        self.obstacle = np.zeros(7)
-        self.obstacle_end = np.zeros(7)
-        self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
+        self.distance_weight = -100
+        self.obs_distance_weight = 100
+        self.obstacle = np.zeros(6)
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
-        self.test_data = np.zeros(10)
-        self.cases = np.loadtxt('testset_hard.txt')
-        self.randnum = 0
 
         with self.sim.no_rendering():
             self._create_scene()
@@ -366,57 +361,41 @@ class ReachObs(Task):
         return np.concatenate((self.goal, self.obstacle, self.link_dist))
 
     def get_achieved_goal(self) -> np.ndarray:
-        ee_position = np.array(self.robot.get_ee_position())
-        return ee_position
+        return np.array(self.robot.get_ee_position())
 
     def reset(self) -> None:
-        self.randnum = np.random.randint(0, 1000)
         self.collision = False
         distance_fail = True
-        if np.array_equal(self.test_data, np.zeros(10)):
-            while distance_fail:
-                self.goal = self._sample_goal()
-                self.obstacle = self._sample_obstacle()
-                self.obstacle_end = self._sample_obstacle()
-                self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-                self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
-                distance_fail = self.sim.check_target_obstacle_distance() < 0.1
-                # start_end_dist = distance(self.obstacle_end, self.obstacle)
-                # distance_fail = distance_fail and (start_end_dist < 0.3)
-            self.collision, self.link_dist = self.sim.check_collision_obs()
-            self.last_dist = self.link_dist
-            if self.collision:
-                print("Collision after reset, this should not happen")
-        else:
-            self.goal = self.test_data[:3]
-            self.obstacle_end = self.test_data[3:]
-
-            start_end_dist = 0
-            while start_end_dist < 0.3:
-                self.obstacle = self._sample_obstacle()
-                start_end_dist = distance(self.obstacle_end, self.obstacle)
-            # set the rotation for obstacle to same value for linear movement
-            self.obstacle[3:] = self.obstacle_end[3:]
+        while distance_fail:
+            self.goal = self._sample_goal()
+            self.obstacle = self._sample_obstacle()
             self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-            # set final pose to keep the environment constant
-            self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
-            self.collision, self.link_dist = self.sim.check_collision_obs()
-            self.last_dist = self.link_dist
+            self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
+            distance_fail = self.sim.get_target_to_obstacle_distance() < 0.1
+        self.collision = self.sim.check_collision()
+        self.link_dist = self.sim.get_link_distances()
+        self.last_dist = self.link_dist
+        if self.collision:
+            print("Collision after reset, this should not happen")
 
-    def set_goal_and_obstacle(self, data):
-        self.test_data = data
+    def set_goal_and_obstacle(self, test_data):
+        self.goal = test_data[:3]
+        self.obstacle = test_data[3:]
+        self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0]))
+        self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
+        self.collision = self.sim.check_collision()
+        self.link_dist = self.sim.get_link_distances()
+        self.last_dist = self.link_dist
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
-        # goal = self.cases[self.randnum, :3]
         return goal
 
     def _sample_obstacle(self):
-        obstacle = np.zeros(7)
-        obstacle[:3] = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
-        obstacle[3:] = np.roll(np.array(Quaternion.random().elements), -1)
-        # obstacle = self.cases[self.randnum, 3:]
+        obstacle_pos = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
+        obstacle_rot = sample_euler()
+        obstacle = np.concatenate((obstacle_pos, obstacle_rot))
         return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
@@ -424,24 +403,27 @@ class ReachObs(Task):
         return np.array(d < self.distance_threshold, dtype=np.bool8)
 
     def check_collision(self) -> bool:
-        self.collision, self.link_dist = self.sim.check_collision_obs()
+        self.collision = self.sim.check_collision()
+        return self.collision
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        self.link_dist = self.sim.get_link_distances()
+        dist_change = self.link_dist - self.last_dist
+        self.last_dist = self.link_dist
         # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
-        reward = np.float32(0.0)
+        reward = np.float64(0.0)
 
         # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
         distances = np.abs(distance(achieved_goal, desired_goal))
         reward += np.where(distances < 0.05, 200, 0).astype(np.float32)
-        reward += -500 if self.collision else 0
-        reward += -100 * distances
+        reward += self.collision_weight if self.collision else 0
+        reward += self.distance_weight * distances
 
         # For the loop, we'll use numpy's vectorized operations
-        reward_changes = np.where(self.link_dist < 0.2, 100 * (self.link_dist - self.last_dist), 0)
+        reward_changes = np.where(self.link_dist < 0.2, self.obs_distance_weight * dist_change, 0)
         reward += reward_changes.sum()  # sum up the rewards from all elements
 
-        self.last_dist = self.link_dist  # this line is already vectorized
-        return reward.astype(np.float32)
+        return reward
 
 
 class ReachDyn(Task):
@@ -470,11 +452,9 @@ class ReachDyn(Task):
         # Stored values
         self.obstacle_start = np.zeros(6)
         self.obstacle_end = np.zeros(6)
-        self.distances_to_obs = np.array([5.0, 5.0, 5.0, 5.0, 5.0, 5.0])
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
-        self.test_data = np.zeros(10)
 
         with self.sim.no_rendering():
             self._create_scene()
@@ -531,46 +511,37 @@ class ReachDyn(Task):
         return np.concatenate((ee_position, ee_orientation))
 
     def reset(self) -> None:
-        self.randnum = np.random.randint(0, 1000)
         self.collision = False
         distance_fail = True
-        if np.array_equal(self.test_data, np.zeros(10)):
-            while distance_fail:
-                self.goal = self._sample_goal()
-                self.obstacle_start = self._sample_obstacle()
-                self.obstacle_end = self._sample_obstacle()
-                self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
-                self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
-                start_end_dist = distance(self.obstacle_end, self.obstacle_start)
-                distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 0.3)
-
-            # set obstacle to start position after checking
-            self.sim.set_base_pose("obstacle", self.obstacle_start[:3], self.obstacle_start[3:])
-            self.collision = self.sim.check_collision()
-            self.link_dist = self.sim.get_link_distances()
-            self.last_dist = self.link_dist
-            if self.collision:
-                print("Collision after reset, this should not happen")
-        else:
-            # TODO: change this to new task settings
-            self.goal = self.test_data[:3]
-            self.obstacle_end = self.test_data[3:]
-
-            start_end_dist = 0
-            while start_end_dist < 0.3:
-                self.obstacle_start = self._sample_obstacle()
-                start_end_dist = distance(self.obstacle_end, self.obstacle_start)
-            # set the rotation for obstacle to same value for linear movement
-            self.obstacle_start[3:] = self.obstacle_end[3:]
-            self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0]))
-            # set final pose to keep the environment constant
+        while distance_fail:
+            self.goal = self._sample_goal()
+            self.obstacle_start = self._sample_obstacle()
+            self.obstacle_end = self._sample_obstacle()
+            self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
             self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
-            self.collision = self.sim.check_collision()
-            self.link_dist = self.sim.get_link_distances()
-            self.last_dist = self.link_dist
+            start_end_dist = distance(self.obstacle_end, self.obstacle_start)
+            distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 0.3)
 
-    def set_goal_and_obstacle(self, data):
-        self.test_data = data
+        # set obstacle to start position after checking
+        self.sim.set_base_pose("obstacle", self.obstacle_start[:3], self.obstacle_start[3:])
+        self.collision = self.sim.check_collision()
+        self.link_dist = self.sim.get_link_distances()
+        self.last_dist = self.link_dist
+        if self.collision:
+            print("Collision after reset, this should not happen")
+
+    def set_goal_and_obstacle(self, test_data):
+        self.goal = test_data[:6]
+        self.obstacle_start = test_data[6:12]
+        self.obstacle_end = test_data[12:]
+
+        # set the rotation for obstacle to same value for linear movement
+        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+        # set final pose to keep the environment constant
+        self.sim.set_base_pose("obstacle", self.obstacle_start[:3], self.obstacle_start[3:])
+        self.collision = self.sim.check_collision()
+        self.link_dist = self.sim.get_link_distances()
+        self.last_dist = self.link_dist
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
@@ -593,10 +564,14 @@ class ReachDyn(Task):
 
     def check_collision(self) -> bool:
         self.collision = self.sim.check_collision()
+        return self.collision
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        self.link_dist = self.sim.get_link_distances()
+        dist_change = self.link_dist - self.last_dist
+        self.last_dist = self.link_dist
         # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
-        reward = np.float32(0.0)
+        reward = np.float64(0.0)
 
         # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
         dist = np.abs(distance(achieved_goal, desired_goal))
@@ -607,8 +582,7 @@ class ReachDyn(Task):
         reward += self.orientation_weight * ori_dist
 
         # For the loop, we'll use numpy's vectorized operations
-        reward_changes = np.where(self.link_dist < 0.2, self.dist_change_weight * (self.link_dist - self.last_dist), 0)
+        reward_changes = np.where(self.link_dist < 0.2, self.dist_change_weight * dist_change, 0)
         reward += reward_changes.sum()  # sum up the rewards from all elements
 
-        self.last_dist = self.link_dist  # this line is already vectorized
-        return reward.astype(np.float32)
+        return reward

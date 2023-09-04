@@ -324,7 +324,7 @@ class RobotTaskEnv(gym.Env):
         #         self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
 
         self.sim.step()
-        collision = self.sim.check_collision()
+        collision = self.task.check_collision()
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or collision)
