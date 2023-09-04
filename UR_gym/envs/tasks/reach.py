@@ -204,8 +204,8 @@ class ReachOri(Task):
             self.test_goal = np.zeros(6)
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
-    def set_goal(self, new_goal):
-        self.test_goal = new_goal
+    def set_goal(self, test_goal):
+        self.goal = test_goal
 
     def _sample_goal(self) -> np.ndarray:
 

@@ -149,8 +149,11 @@ if __name__ == '__main__':
     CHOMP.robot.reset()
     # initial_trajectory = CHOMP.initialize_trajectory()
     # trajectory = CHOMP.chomp_gradient_descent(initial_trajectory)
-    # # what = CHOMP.ur5e.forward([-0.28394961, -1.32822716, -0.59661657, -1.06940711,  0.25196928, -0.11292072])
-    #
+    CHOMP.robot.set_joint_angles(np.array([-0.28394961, -2.12822716, -0.59661657, -1.06940711,  0.25196928, -0.11292072]))
+    x = CHOMP.robot.get_ee_position()
+    y = CHOMP.robot.get_ee_orientation()
+
+    CHOMP.sim.set_base_pose("target", np.array([0.57299605, -0.50660484, 0.74738161]), np.array([-1.77311978, -0.74027606, -3.08782273]))
     # CHOMP.robot.set_joint_angles(trajectory[99])
 
     # ur5e = ur_kinematics.URKinematics('ur5e')
