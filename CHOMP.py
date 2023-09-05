@@ -7,6 +7,7 @@ from UR_gym.pyb_setup import PyBullet
 import numpy as np
 from pyquaternion import Quaternion
 from ur_ikfast import ur_kinematics
+from UR_gym.utils import distance, angular_distance
 "Have to change robot configuration in urdf from 0->3.141592653589793 Line 230 since the ur_ikfast is different from the urdf."
 
 
@@ -153,7 +154,9 @@ if __name__ == '__main__':
     x = CHOMP.robot.get_ee_position()
     y = CHOMP.robot.get_ee_orientation()
 
-    CHOMP.sim.set_base_pose("target", np.array([0.57299605, -0.50660484, 0.74738161]), np.array([-1.77311978, -0.74027606, -3.08782273]))
+    a = np.array([0.57299605, -0.50660484, 0.74738161])
+    b = np.array([-1.77311978, -0.74027606, -3.08782273])
+    CHOMP.sim.set_base_pose("target", a, b)
     # CHOMP.robot.set_joint_angles(trajectory[99])
 
     # ur5e = ur_kinematics.URKinematics('ur5e')
@@ -172,7 +175,18 @@ if __name__ == '__main__':
     # CHOMP.generate_random_pose()
     # CHOMP.pose = 0.4, -0.4, 0.2, -0.22863067, 0.1148493, -0.4594511, 0.85055414
     # CHOMP.sim.set_base_pose("target", CHOMP.pose[:3], CHOMP.pose[3:])
-    # 
+    #
+    reward = np.float32(0.0)
+
+    # ----------------our reward function---------------
+    d = distance(np.concatenate((x, y)), np.concatenate((a, b)))
+    dr = angular_distance(np.concatenate((x, y)), np.concatenate((a, b)))
+    """Distance Reward"""
+    # if d <= self.delta:
+    #     reward += 0.5 * np.square(d) * self.distance_weight
+    # else:
+    #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
+
     angles = CHOMP.compute_inverse_kinematics([0.32, 0, 0.2, 1, 0, 0, 0])
     angles = [0, 0, 0, 0, 0, 0]
     CHOMP.robot.set_joint_angles(angles)

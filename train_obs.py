@@ -75,7 +75,7 @@ signal.signal(signal.SIGINT, sig_handler)
 # ---------------- Training from scratch
 
 env = gymnasium.make("UR5ObsReach-v1", render=True)
-check_env(env, warn=True)
+# check_env(env, warn=True)
 
 model = SAC(
     "MultiInputPolicy",

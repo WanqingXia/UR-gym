@@ -197,15 +197,12 @@ class ReachOri(Task):
 
     def reset(self) -> None:
         self.collision = False
-        if np.array_equal(self.test_goal, np.zeros(6)):
-            self.goal = self._sample_goal()
-        else:
-            self.goal = self.test_goal
-            self.test_goal = np.zeros(6)
+        self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
     def set_goal(self, test_goal):
         self.goal = test_goal
+        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
     def _sample_goal(self) -> np.ndarray:
 

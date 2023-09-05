@@ -45,11 +45,11 @@ def angular_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     assert a.shape == b.shape
 
     if len(a.shape) == 1:  # If a and b are 1D arrays
-        a_rot = R.from_euler('xyz', a[3:])
-        b_rot = R.from_euler('xyz', b[3:])
+        a_rot = R.from_euler('ZYX', a[3:])
+        b_rot = R.from_euler('ZYX', b[3:])
     else:  # If a and b are multi-dimensional arrays
-        a_rot = R.from_euler('xyz', a[:, 3:])
-        b_rot = R.from_euler('xyz', b[:, 3:])
+        a_rot = R.from_euler('ZYX', a[:, 3:])
+        b_rot = R.from_euler('ZYX', b[:, 3:])
 
     quaternion_a = a_rot.as_quat()
     quaternion_b = b_rot.as_quat()
@@ -74,12 +74,12 @@ def sample_euler():
     # Generate a random rotation matrix
     rot_mat = R.random()
     # Convert the rotation matrix to Euler angles
-    euler_angles = rot_mat.as_euler('xyz', degrees=False)
+    euler_angles = rot_mat.as_euler('ZYX', degrees=False)
     # Print the Euler angles
     return euler_angles
 
 
 def euler_to_quaternion(euler_angles):
-    quat = R.from_euler('XYZ', euler_angles).as_quat()
+    quat = R.from_euler('ZYX', euler_angles).as_quat()
     return np.roll(quat, 1)
 

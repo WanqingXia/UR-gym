@@ -241,7 +241,7 @@ class PyBullet:
         orientation = self.physics_client.getLinkState(self._bodies_idx[body], link)[1]
 
         if type == "euler":
-            "roll-pitch-yaw (ZYX) "
+            "yaw-pitch-roll (ZYX) "
             rotation = self.physics_client.getEulerFromQuaternion(orientation)
             return np.array(rotation)
         elif type == "quaternion":
