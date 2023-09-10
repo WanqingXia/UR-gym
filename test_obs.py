@@ -4,17 +4,24 @@ import gymnasium
 sys.modules["gym"] = gymnasium
 import UR_gym
 from stable_baselines3 import SAC
-import signal
 import time
 from tqdm import tqdm
 
 
-def sig_handler(signal, frame):
-    print("Existing Program...")
-    sys.exit(0)
+# The original get_obs() function in core.py is prohibited to use, so we need to define a new one
+def get_obs(env):
+    robot_obs = env.robot.get_obs().astype(np.float32)  # robot state
+    task_obs = env.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+    observation = np.concatenate([robot_obs, task_obs])
+    achieved_goal = env.task.get_achieved_goal().astype(np.float32)
+    obs = {
+        "observation": observation,
+        "achieved_goal": achieved_goal,
+        "desired_goal": env.task.get_goal().astype(np.float32),
+    }
 
-
-signal.signal(signal.SIGINT, sig_handler)
+    info = {"is_success": env.task.is_success(obs["achieved_goal"], env.task.get_goal())}
+    return obs, info
 
 
 def test_robot(points):
@@ -23,7 +30,7 @@ def test_robot(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn2/SAC_Trained_Linear/"
+    model_path = "./Obs_trained/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
@@ -32,10 +39,12 @@ def test_robot(points):
     rewards = np.zeros(points.shape[0])
 
     for trials in tqdm(range(success.size)):
-        env.task.set_goal_and_obstacle(points[trials, :])
         obs = env.reset()
+        env.task.set_goal_and_obstacle(points[trials, :])
+        obs = get_obs(env)
+
         for steps in range(100):
-            time.sleep(0.04)
+            # time.sleep(0.04)
             action, _states = model.predict(obs[0], deterministic=True)
             obs = env.step(action)
             env.render()
@@ -44,7 +53,7 @@ def test_robot(points):
                 success[trials] = obs[4]['is_success']
                 num_steps[trials] = steps
                 break
-    time.sleep(3) # for viewing clearly
+    # time.sleep(3) # for viewing clearly
     env.close()
     success_rate = (np.sum(success) / success.size) * 100
     avg_reward = (np.sum(rewards) / rewards.size)
@@ -59,5 +68,5 @@ def test_robot(points):
 
 
 if __name__ == "__main__":
-    points = np.loadtxt('testset_new.txt')
+    points = np.loadtxt('testset_obs.txt')
     test_robot(points)

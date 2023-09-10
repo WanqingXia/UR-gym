@@ -74,7 +74,7 @@ signal.signal(signal.SIGINT, sig_handler)
 
 # ---------------- Training from scratch
 
-env = gymnasium.make("UR5ObsReach-v1", render=True)
+env = gymnasium.make("UR5DynReach-v1", render=True)
 # check_env(env, warn=True)
 
 model = SAC(
@@ -98,5 +98,6 @@ callback_list = CallbackList([callback_save_best_model])
 
 
 # ---------------- Start Training
-model.learn(total_timesteps=epochs, callback=callback_list)
+# model.learn(total_timesteps=epochs, callback=callback_list)
+model.learn(total_timesteps=epochs)
 env.close()

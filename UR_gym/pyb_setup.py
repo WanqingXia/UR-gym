@@ -148,6 +148,9 @@ class PyBullet:
 
             return px
 
+    def euler_to_quaternion(self, euler):
+        return self.physics_client.getQuaternionFromEuler(euler)
+
     def get_base_position(self, body: str) -> np.ndarray:
         """Get the position of the body.
 

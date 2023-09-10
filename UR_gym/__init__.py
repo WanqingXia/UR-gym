@@ -29,7 +29,14 @@ register(
 )
 
 register(
+    id="UR5StaReach-v1",
+    entry_point="UR_gym.envs:UR5StaReachEnv",
+    max_episode_steps=100,
+)
+
+
+register(
     id="UR5DynReach-v1",
-    entry_point="UR_gym.envs:UR5ObsReachEnv",
+    entry_point="UR_gym.envs:UR5DynReachEnv",
     max_episode_steps=100,
 )

@@ -70,7 +70,6 @@ def angular_distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 
 def sample_euler():
-
     # Generate a random rotation matrix
     rot_mat = R.random()
     # Convert the rotation matrix to Euler angles
@@ -79,7 +78,17 @@ def sample_euler():
     return euler_angles
 
 
-def euler_to_quaternion(euler_angles):
-    quat = R.from_euler('ZYX', euler_angles).as_quat()
-    return np.roll(quat, 1)
+def sample_euler_constrained():
+    # yaws = np.random.uniform(90, -90)  # adjusted yaw values between 90 and -90 degrees
+    # pitches = np.random.uniform(0, 180)  # adjusted pitch values between 90 and 180 degrees
+    # rolls = np.random.uniform(0, 360)
 
+    roll = np.random.uniform(-90, -180)  # adjusted yaw values between 90 and -90 degrees
+    # yaw = np.random.uniform(0, 360)  # adjusted pitch values between 90 and 180 degrees
+    yaw = np.random.uniform(0, -180)
+
+    # roll = np.random.uniform(90, 270)  # adjusted yaw values between 90 and -90 degrees
+    # yaw = np.random.uniform(0, 90)  # adjusted pitch values between 90 and 180 degrees
+    # pitch = np.random.uniform(0, 360)
+    euler_angles = np.deg2rad([roll, 0, yaw])
+    return euler_angles

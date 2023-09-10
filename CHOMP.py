@@ -7,7 +7,7 @@ from UR_gym.pyb_setup import PyBullet
 import numpy as np
 from pyquaternion import Quaternion
 from ur_ikfast import ur_kinematics
-from UR_gym.utils import distance, angular_distance
+from UR_gym.utils import *
 "Have to change robot configuration in urdf from 0->3.141592653589793 Line 230 since the ur_ikfast is different from the urdf."
 
 
@@ -15,7 +15,7 @@ class UR5e_CHOMP():
     def __init__(self):
         self.sim = PyBullet(render=True)
         self.robot = UR5Ori(self.sim, block_gripper=True, base_position=np.array([0.0, 0.0, 0.0]))
-        self.goal_range_low = np.array([0.3, -0.5, -0.1])  # table width, table length, height
+        self.goal_range_low = np.array([0.3, -0.5, 0.0])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
         self.obs_range_low = np.array([0.3, -0.5, 0.25])  # table width, table length, height
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
@@ -51,10 +51,10 @@ class UR5e_CHOMP():
         )
         self.sim.create_box(
             body_name="zone_goal",
-            half_extents=np.array([0.225, 0.5, 0.15]),
+            half_extents=np.array([0.225, 0.5, 0.1]),
             mass=0.0,
             ghost=True,
-            position=np.array([0.525, 0.0, 0.05]),
+            position=np.array([0.525, 0.0, 0.1]),
             rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
         )
         self.sim.create_box(
@@ -147,16 +147,21 @@ class UR5e_CHOMP():
 
 if __name__ == '__main__':
     CHOMP = UR5e_CHOMP()
-    CHOMP.robot.reset()
+
     # initial_trajectory = CHOMP.initialize_trajectory()
     # trajectory = CHOMP.chomp_gradient_descent(initial_trajectory)
     CHOMP.robot.set_joint_angles(np.array([-0.28394961, -2.12822716, -0.59661657, -1.06940711,  0.25196928, -0.11292072]))
     x = CHOMP.robot.get_ee_position()
     y = CHOMP.robot.get_ee_orientation()
 
+    what = CHOMP.sim.physics_client.getQuaternionFromEuler(y)
+
     a = np.array([0.57299605, -0.50660484, 0.74738161])
     b = np.array([-1.77311978, -0.74027606, -3.08782273])
-    CHOMP.sim.set_base_pose("target", a, b)
+
+    u = np.array([0.5, 0, 0])
+    v = np.array([-3.14, 0, -1.57])
+    CHOMP.sim.set_base_pose("target", x, what)
     # CHOMP.robot.set_joint_angles(trajectory[99])
 
     # ur5e = ur_kinematics.URKinematics('ur5e')
