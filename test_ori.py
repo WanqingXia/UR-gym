@@ -4,17 +4,23 @@ import gymnasium
 sys.modules["gym"] = gymnasium
 import UR_gym
 from stable_baselines3 import SAC
-import signal
 import time
 from tqdm import tqdm
 
 
-def sig_handler(signal, frame):
-    print("Existing Program...")
-    sys.exit(0)
+def get_obs(env):
+    robot_obs = env.robot.get_obs().astype(np.float32)  # robot state
+    task_obs = env.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+    observation = np.concatenate([robot_obs, task_obs])
+    achieved_goal = env.task.get_achieved_goal().astype(np.float32)
+    obs = {
+        "observation": observation,
+        "achieved_goal": achieved_goal,
+        "desired_goal": env.task.get_goal().astype(np.float32),
+    }
 
-
-signal.signal(signal.SIGINT, sig_handler)
+    info = {"is_success": env.task.is_success(obs["achieved_goal"], env.task.get_goal())}
+    return obs, info
 
 
 def test_robot(points):
@@ -23,9 +29,8 @@ def test_robot(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "SAC_best/"
+    model_path = "RobotLearn/SAC_New100/"
     model = SAC.load(model_path + "best_model", env=env)
-    env.task.set_reward()
     obs = env.reset()
 
     success = np.zeros(points.shape[0])
@@ -33,8 +38,9 @@ def test_robot(points):
     actions = np.zeros(points.shape[0])
 
     for trials in tqdm(range(success.size)):
-        env.task.set_goal(points[trials, :])
         obs = env.reset()
+        env.task.set_goal(points[trials, :])
+        obs = get_obs(env)
         for steps in range(100):
             action, _states = model.predict(obs[0], deterministic=True)
             obs = env.step(action)

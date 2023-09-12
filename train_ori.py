@@ -98,7 +98,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "SAC_New100"
+log_dir = "./RobotLearn/" + "SAC_New101"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 
