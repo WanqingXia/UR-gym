@@ -17,7 +17,7 @@ class UR5e_CHOMP():
         self.robot = UR5Ori(self.sim, block_gripper=True, base_position=np.array([0.0, 0.0, 0.0]))
         self.goal_range_low = np.array([0.3, -0.5, 0.0])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
-        self.obs_range_low = np.array([0.3, -0.5, 0.25])  # table width, table length, height
+        self.obs_range_low = np.array([0.5, -0.5, 0.25])  # table width, table length, height
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
         self.pose = np.zeros(7)
         self.ur5e = ur_kinematics.URKinematics('ur5e')
@@ -41,14 +41,17 @@ class UR5e_CHOMP():
             rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
             texture=os.getcwd() + "/UR_gym/assets/colored_cube_ori.png",
         )
-        self.sim.create_box(
+        self.sim.create_cylinder(
             body_name="obstacle",
-            half_extents=np.array([0.2, 0.05, 0.05]),  # make the obstacle a rectangular shape
+            radius=0.05,
+            height=0.4,
             mass=0.0,
             ghost=False,
-            position=np.array([0.0, 0.0, 2.0]),
-            rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
+            position=np.array([0.0, 0.0, 1.0]),
+            rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
+            texture=os.getcwd() + "/UR_gym/assets/cylinder.png",
         )
+
         self.sim.create_box(
             body_name="zone_goal",
             half_extents=np.array([0.225, 0.5, 0.1]),
@@ -159,9 +162,12 @@ if __name__ == '__main__':
     a = np.array([0.57299605, -0.50660484, 0.74738161])
     b = np.array([-1.77311978, -0.74027606, -3.08782273])
 
-    u = np.array([0.5, 0, 0])
-    v = np.array([-3.14, 0, -1.57])
-    CHOMP.sim.set_base_pose("target", x, what)
+    u = np.array([0.5, 0, 0.5])
+    v = np.array([-2.335, -0.785, 0])
+    while True:
+        what = sample_euler_obstacle()
+        CHOMP.sim.set_base_pose("obstacle", u, what)
+        stop = 1
     # CHOMP.robot.set_joint_angles(trajectory[99])
 
     # ur5e = ur_kinematics.URKinematics('ur5e')

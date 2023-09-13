@@ -310,7 +310,7 @@ class ReachObs(Task):
         self.robot = robot
         self.goal_range_low = np.array([0.3, -0.5, -0.1])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
-        self.obs_range_low = np.array([0.3, -0.5, 0.25])  # table width, table length, height
+        self.obs_range_low = np.array([0.5, -0.5, 0.25])  # table width, table length, height
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
         self.action_weight = -1
         self.collision_weight = -500
@@ -337,14 +337,18 @@ class ReachObs(Task):
             position=np.zeros(3),
             rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )
-        self.sim.create_box(
+
+        self.sim.create_cylinder(
             body_name="obstacle",
-            half_extents=np.array([0.2, 0.05, 0.05]),  # make the obstacle a rectangular shape
+            radius=0.05,
+            height=0.4,
             mass=0.0,
             ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
-            rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
+            rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
+            texture=os.getcwd() + "/UR_gym/assets/cylinder.png",
         )
+
         self.sim.create_box(
             body_name="zone_goal",
             half_extents=np.array([0.225, 0.5, 0.15]),
@@ -355,10 +359,10 @@ class ReachObs(Task):
         )
         self.sim.create_box(
             body_name="zone_obs",
-            half_extents=np.array([0.35, 0.5, 0.15]),
+            half_extents=np.array([0.25, 0.5, 0.15]),
             mass=0.0,
             ghost=True,
-            position=np.array([0.65, 0.0, 0.4]),
+            position=np.array([0.75, 0.0, 0.4]),
             rgba_color=np.array([1.0, 1.0, 1.0, 0.2]),
         )
 
@@ -399,7 +403,7 @@ class ReachObs(Task):
 
     def _sample_obstacle(self):
         obstacle_pos = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
-        obstacle_rot = sample_euler()
+        obstacle_rot = sample_euler_obstacle()
         obstacle = np.concatenate((obstacle_pos, obstacle_rot))
         return obstacle
 
@@ -477,13 +481,15 @@ class ReachSta(Task):
             rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
             texture=os.getcwd() + "/UR_gym/assets/colored_cube_ori.png",  # the robot end-effector should point to blue
         )
-        self.sim.create_box(
+        self.sim.create_cylinder(
             body_name="obstacle",
-            half_extents=np.array([0.2, 0.05, 0.05]),  # make the obstacle a rectangular shape
+            radius=0.05,
+            height=0.4,
             mass=0.0,
             ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
-            rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
+            rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
+            texture=os.getcwd() + "/UR_gym/assets/cylinder.png",
         )
         self.sim.create_box(
             body_name="zone_goal",
@@ -545,13 +551,13 @@ class ReachSta(Task):
         """Randomize goal."""
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
         # TODO: pos cannot be 100% random, it should be in the range of the robot
-        goal_rot = sample_euler()
+        goal_rot = sample_euler_constrained()
         goal = np.concatenate((goal_pos, goal_rot))
         return goal
 
     def _sample_obstacle(self):
         obstacle_pos = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
-        obstacle_rot = sample_euler()
+        obstacle_rot = sample_euler_obstacle()
         obstacle = np.concatenate((obstacle_pos, obstacle_rot))
         return obstacle
 
@@ -633,13 +639,15 @@ class ReachDyn(Task):
             rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
             texture=os.getcwd() + "/UR_gym/assets/colored_cube_ori.png",  # the robot end-effector should point to blue
         )
-        self.sim.create_box(
+        self.sim.create_cylinder(
             body_name="obstacle",
-            half_extents=np.array([0.2, 0.05, 0.05]),  # make the obstacle a rectangular shape
+            radius=0.05,
+            height=0.4,
             mass=0.0,
             ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
-            rgba_color=np.array([0.1, 1.0, 1.0, 1.0]),
+            rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
+            texture=os.getcwd() + "/UR_gym/assets/cylinder.png",
         )
         self.sim.create_box(
             body_name="zone_goal",
@@ -707,13 +715,13 @@ class ReachDyn(Task):
         """Randomize goal."""
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
         # TODO: pos cannot be 100% random, it should be in the range of the robot
-        goal_rot = sample_euler()
+        goal_rot = sample_euler_constrained()
         goal = np.concatenate((goal_pos, goal_rot))
         return goal
 
     def _sample_obstacle(self):
         obstacle_pos = self.np_random.uniform(self.obs_range_low, self.obs_range_high)
-        obstacle_rot = sample_euler()
+        obstacle_rot = sample_euler_obstacle()
         obstacle = np.concatenate((obstacle_pos, obstacle_rot))
         return obstacle
 

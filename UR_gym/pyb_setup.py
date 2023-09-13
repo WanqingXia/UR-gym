@@ -577,6 +577,7 @@ class PyBullet:
             ghost: bool = False,
             lateral_friction: Optional[float] = None,
             spinning_friction: Optional[float] = None,
+            texture: Optional[str] = None,
     ) -> None:
         """Create a cylinder.
 
@@ -614,6 +615,10 @@ class PyBullet:
             visual_kwargs=visual_kwargs,
             collision_kwargs=collision_kwargs,
         )
+        if texture is not None:
+            texture_path = os.path.join(UR_gym.assets.get_data_path(), texture)
+            texture_uid = self.physics_client.loadTexture(texture_path)
+            self.physics_client.changeVisualShape(self._bodies_idx[body_name], -1, textureUniqueId=texture_uid)
 
     def create_sphere(
             self,

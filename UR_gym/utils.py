@@ -79,16 +79,23 @@ def sample_euler():
 
 
 def sample_euler_constrained():
-    # yaws = np.random.uniform(90, -90)  # adjusted yaw values between 90 and -90 degrees
-    # pitches = np.random.uniform(0, 180)  # adjusted pitch values between 90 and 180 degrees
-    # rolls = np.random.uniform(0, 360)
-
-    roll = np.random.uniform(-90, -180)  # adjusted yaw values between 90 and -90 degrees
-    # yaw = np.random.uniform(0, 360)  # adjusted pitch values between 90 and 180 degrees
+    roll = np.random.uniform(-90, -180)
+    pitch = 0
     yaw = np.random.uniform(0, -180)
+    euler_angles = np.deg2rad([roll, pitch, yaw])
+    return euler_angles
 
-    # roll = np.random.uniform(90, 270)  # adjusted yaw values between 90 and -90 degrees
-    # yaw = np.random.uniform(0, 90)  # adjusted pitch values between 90 and 180 degrees
-    # pitch = np.random.uniform(0, 360)
-    euler_angles = np.deg2rad([roll, 0, yaw])
+def sample_euler_obstacle():
+    chosen_range = np.random.choice(['negative', 'positive'], p=[0.5, 0.5])
+
+    if chosen_range == 'negative':
+        roll = np.random.uniform(-30, -150)
+    else:
+        roll = np.random.uniform(30, 150)
+    if roll < -90 or roll > 90:
+        pitch = np.random.uniform(-30, -150)
+    else:
+        pitch = np.random.uniform(30, 150)
+    yaw = 0
+    euler_angles = np.deg2rad([roll, pitch, yaw])
     return euler_angles
