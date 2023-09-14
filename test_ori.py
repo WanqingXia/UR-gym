@@ -29,7 +29,7 @@ def test_robot(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "RobotLearn/SAC_New100/"
+    model_path = "./Trained_Ori/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 

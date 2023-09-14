@@ -150,8 +150,6 @@ class ReachOri(Task):
         self.distance_threshold = 0.05,  # 5cm
         self.ori_distance_threshold = 0.0873,  # 5 degrees
         self.robot = robot
-        # self.goal_range_low = np.array([0.4, -0.4, 0.2])  # table width, table length, height
-        # self.goal_range_high = np.array([0.7, 0.4, 0.6])
         self.goal_range_low = np.array([0.3, -0.5, 0])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
         self.action_weight = -1
@@ -445,7 +443,7 @@ class ReachSta(Task):
         self.robot = robot
         self.goal_range_low = np.array([0.3, -0.5, 0.0])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
-        self.obs_range_low = np.array([0.3, -0.5, 0.25])  # table width, table length, height
+        self.obs_range_low = np.array([0.5, -0.5, 0.25])  # table width, table length, height
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
 
         # margin and weight
@@ -500,12 +498,11 @@ class ReachSta(Task):
             rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
         )
         self.sim.create_box(
-            # TODO: do we want to make the obstacle appear in the same region as the zone goal?
             body_name="zone_obs",
-            half_extents=np.array([0.35, 0.5, 0.15]),
+            half_extents=np.array([0.25, 0.5, 0.15]),
             mass=0.0,
             ghost=True,
-            position=np.array([0.65, 0.0, 0.4]),
+            position=np.array([0.75, 0.0, 0.4]),
             rgba_color=np.array([1.0, 1.0, 1.0, 0.2]),
         )
 
@@ -550,7 +547,6 @@ class ReachSta(Task):
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
-        # TODO: pos cannot be 100% random, it should be in the range of the robot
         goal_rot = sample_euler_constrained()
         goal = np.concatenate((goal_pos, goal_rot))
         return goal
@@ -580,7 +576,7 @@ class ReachSta(Task):
         # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
         dist = np.abs(distance(achieved_goal, desired_goal))
         ori_dist = np.abs(angular_distance(achieved_goal, desired_goal))
-        reward += np.where(dist < 0.05, self.success_weight, 0).astype(np.float32)
+        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0).astype(np.float32)
         reward += self.collision_weight if self.collision else 0
         reward += self.distance_weight * dist
         reward += self.orientation_weight * ori_dist
@@ -602,7 +598,7 @@ class ReachDyn(Task):
         self.robot = robot
         self.goal_range_low = np.array([0.3, -0.5, 0.0])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
-        self.obs_range_low = np.array([0.3, -0.5, 0.25])  # table width, table length, height
+        self.obs_range_low = np.array([0.5, -0.5, 0.25])  # table width, table length, height
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
 
         # margin and weight
@@ -658,12 +654,11 @@ class ReachDyn(Task):
             rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
         )
         self.sim.create_box(
-            # TODO: do we want to make the obstacle appear in the same region as the zone goal?
             body_name="zone_obs",
-            half_extents=np.array([0.35, 0.5, 0.15]),
+            half_extents=np.array([0.25, 0.5, 0.15]),
             mass=0.0,
             ghost=True,
-            position=np.array([0.65, 0.0, 0.4]),
+            position=np.array([0.75, 0.0, 0.4]),
             rgba_color=np.array([1.0, 1.0, 1.0, 0.2]),
         )
 
@@ -714,7 +709,6 @@ class ReachDyn(Task):
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
-        # TODO: pos cannot be 100% random, it should be in the range of the robot
         goal_rot = sample_euler_constrained()
         goal = np.concatenate((goal_pos, goal_rot))
         return goal

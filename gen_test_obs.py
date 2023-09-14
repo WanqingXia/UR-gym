@@ -5,12 +5,13 @@ sys.modules["gym"] = gymnasium
 import UR_gym
 
 
-
 def generate_obs():
-    # enable this function in core.py to generate points
-    # 5000 points, first 3 columns for target position, last 6 columns for obstacle position and orientation
+    """
+    generate 5000 points, first 3 columns for target position,
+    last 6 columns for obstacle position and orientation
+    """
 
-    # ---------------- Create environment
+    # ------------- Create environment------------
     env = gymnasium.make("UR5ObsReach-v1", render=True)
 
     save_goals = np.zeros((5000, 9))

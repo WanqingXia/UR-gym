@@ -31,13 +31,6 @@ wandb.init(
     }
 )
 
-
-def sig_handler(signal, frame):
-    env.close()
-    print("Existing Program...")
-    sys.exit(0)
-
-
 def cos_schedule(initial_value: float, total_timestep: int, warmup_step: int) -> Callable[[float], float]:
     """
     Cosine learning rate schedule.
@@ -63,8 +56,6 @@ def cos_schedule(initial_value: float, total_timestep: int, warmup_step: int) ->
     return func
 
 
-signal.signal(signal.SIGINT, sig_handler)
-
 # ---------------- Load model and continue training
 
 # timesteps = 2000000
@@ -83,14 +74,6 @@ check_env(env, warn=True)
 model = SAC(
     "MultiInputPolicy",
     env,
-    replay_buffer_class=HerReplayBuffer,
-    # Parameters for HER
-    replay_buffer_kwargs=dict(
-        n_sampled_goal=4,
-        goal_selection_strategy="future",
-        online_sampling=True,
-        # max_episode_length=100,
-    ),
     verbose=1,
     buffer_size=int(1e7),
     learning_rate=learning_rate,
@@ -98,7 +81,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "SAC_New101"
+log_dir = "./RobotLearn/" + "Ori_train1"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

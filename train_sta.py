@@ -31,29 +31,6 @@ wandb.init(
     }
 )
 
-
-# def linear_schedule(initial_value: float) -> Callable[[float], float]:
-#     """
-#     Cosine learning rate schedule.
-#
-#     :param initial_value: Initial learning rate.
-#     :return: schedule that computes
-#       current learning rate depending on remaining progress
-#       warm-up from 1e-5 to 1e-3, then decrease to 1e-5
-#     """
-#     def func(progress_remaining: float) -> float:
-#         """
-#         Progress will decrease from 1 (beginning) to 0.
-#
-#         :param progress_remaining:
-#         :return: current learning rate
-#         """
-#
-#         return 0.99 * initial_value * progress_remaining + 0.01 * initial_value
-#
-#     return func
-
-
 # ---------------- Load model and continue training
 
 # timesteps = 10000
@@ -66,7 +43,7 @@ wandb.init(
 
 # ---------------- Training from scratch
 
-env = gymnasium.make("UR5ObsReach-v1", render=True)
+env = gymnasium.make("UR5StaReach-v1", render=True)
 # check_env(env, warn=True)
 
 model = SAC(
@@ -79,7 +56,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "Obs_train1"
+log_dir = "./RobotLearn/" + "Sta_train1"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 
@@ -87,7 +64,6 @@ env = Monitor(env, log_dir)
 callback_save_best_model = EvalCallback(wandb, env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=1000,
                                         deterministic=True, n_eval_episodes=10, render=False)
 callback_list = CallbackList([callback_save_best_model])
-
 
 # ---------------- Start Training
 model.learn(total_timesteps=epochs, callback=callback_list)

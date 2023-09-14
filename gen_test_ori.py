@@ -6,6 +6,11 @@ import UR_gym
 
 
 def generate_ori():
+    """
+    generate 5250 points, 6 columns for target position and orientation
+    """
+
+    # ------------- Create environment------------
     env = gymnasium.make("UR5OriReach-v1", render=True)
     # enable this function in core.py to generate points
     goal_range = env.task.goal_range_high - env.task.goal_range_low
