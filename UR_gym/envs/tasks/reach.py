@@ -154,6 +154,7 @@ class ReachOri(Task):
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
         self.action_weight = -1
         self.collision_weight = -500
+        self.success_reward = 200
         self.distance_weight = -70
         self.orientation_weight = -30
         self.delta = 0.2
@@ -252,6 +253,7 @@ class ReachObs(Task):
         self.obs_range_high = np.array([1.0, 0.5, 0.55])
         self.action_weight = -1
         self.collision_weight = -500
+        self.success_weight = 200
         self.distance_weight = -100
         self.obs_distance_weight = 100
         self.obstacle = np.zeros(6)
@@ -346,8 +348,7 @@ class ReachObs(Task):
         return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
-        return np.array(d < self.distance_threshold, dtype=np.bool8)
+        distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold
         return np.array(distance_success, dtype=np.bool8)
 
     def check_collision(self) -> bool:
