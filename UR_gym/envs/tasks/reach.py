@@ -186,14 +186,6 @@ class ReachOri(Task):
             position=np.array([0.525, 0.0, 0.1]),
             rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
         )
-        # self.sim.create_box(
-        #     body_name="zone",
-        #     half_extents=np.array([0.15, 0.4, 0.2]),
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([0.55, 0.0, 0.4]),
-        #     rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
-        # )
 
     def get_obs(self) -> np.ndarray:
         return np.array(self.goal)
@@ -213,86 +205,34 @@ class ReachOri(Task):
         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
 
     def _sample_goal(self) -> np.ndarray:
-
         goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
         goal_rot = sample_euler_constrained()
         goal = np.concatenate((goal_pos, goal_rot))
-
-        # """Randomize goal."""
-        # # Adding the goal verification code
-        # valid = False
-        # counter = 0
-        # goal = 0
-        # while valid is False:
-        #     print("while")
-        #     if counter > 0:
-        #         print("retrying {} times".format(counter))
-        #     counter += 1
-        #     goal_pos = np.array(self.np_random.uniform(self.goal_range_low, self.goal_range_high))
-        #     goal_rot_euler = sample_euler()
-        #     goal_rot_quat = euler_to_quaternion(goal_rot_euler)
-        #     goal = np.concatenate((goal_pos, goal_rot_euler))
-        #     angles = ur5e.inverse(np.concatenate((goal_pos, goal_rot_quat)), False)
-        #     if angles is None or np.max(np.abs(angles)) > 6.28:
-        #         print("if")
-        #         pass
-        #     else:
-        #         self.robot.set_joint_angles(angles)
-        #         self.sim.step()
-        #         valid = self.is_success(goal, self.get_achieved_goal())
-        #         print("else")
-        #         print(valid)
-        # print("pass")
-        # self.robot.reset()
         return goal
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
-        dr = angular_distance(achieved_goal, desired_goal)
-        return np.array((d < self.distance_threshold) & (dr < self.ori_distance_threshold), dtype=np.bool8)
+        distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold
+        orientation_success = angular_distance(achieved_goal, desired_goal) < self.ori_distance_threshold
+        return np.array(distance_success & orientation_success, dtype=np.bool8)
 
     def check_collision(self) -> bool:
         self.collision = self.sim.check_collision()
         return self.collision
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        reward = np.float32(0.0)
+        reward = np.float64(0.0)
 
-        # ----------------our reward function---------------
-        d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        dr = angular_distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
+        dist = distance(achieved_goal, desired_goal)
+        ori_dist = angular_distance(achieved_goal, desired_goal)
+
+        """Success reward"""
+        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_reward, 0)
         """Distance Reward"""
-        # if d <= self.delta:
-        #     reward += 0.5 * np.square(d) * self.distance_weight
-        # else:
-        #     reward += self.distance_weight * self.delta * (np.abs(d) - 0.5 * self.delta)
-        reward += np.where((d < self.distance_threshold) & (dr < self.ori_distance_threshold), 200, 0)
-        reward += np.abs(d) * self.distance_weight
+        reward += dist * self.distance_weight
         """Orientation Reward"""
-        reward += np.abs(dr) * self.orientation_weight
-        """Action Reward"""
-        # reward += np.sum(np.square(self.robot.get_action())) * self.action_weight
+        reward += ori_dist * self.orientation_weight
         """Collision Reward"""
         reward += self.collision_weight if self.collision else 0
-
-        # ----------------New reward function 1---------------
-        # this reward is from article "Collision-free path planning for a guava-harvesting robot based on
-        # recurrent deep reinforcement learning"
-        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        #
-        # if du.size == 3:
-        #     reward += -d + 50 * np.cos(du[0]) * np.cos(du[1]) * np.cos(du[2])
-        # else:
-        #     reward += -d + 50 * np.cos(du[:, 0]) * np.cos(du[:, 1]) * np.cos(du[:, 2])
-
-        # ----------------New reward function 2---------------
-        # this reward is from article "Reinforcement learning with prior policy guidance for motion planning
-        # of dual-arm free-floating space robot"
-        # d = distance(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        # du = quaternion_to_euler(achieved_goal.astype(np.float32), desired_goal.astype(np.float32))
-        #
-        # reward += 1 - np.tanh(d) + np.cos(np.max(du))
 
         return reward
 
@@ -408,6 +348,7 @@ class ReachObs(Task):
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=np.bool8)
+        return np.array(distance_success, dtype=np.bool8)
 
     def check_collision(self) -> bool:
         self.collision = self.sim.check_collision()
@@ -417,18 +358,19 @@ class ReachObs(Task):
         self.link_dist = self.sim.get_link_distances()
         dist_change = self.link_dist - self.last_dist
         self.last_dist = self.link_dist
+        dist = distance(achieved_goal, desired_goal)
+
         # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
         reward = np.float64(0.0)
-
-        # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
-        distances = np.abs(distance(achieved_goal, desired_goal))
-        reward += np.where(distances < 0.05, 200, 0)
+        """success reward"""
+        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0)
+        """"collision reward"""
         reward += self.collision_weight if self.collision else 0
-        reward += self.distance_weight * distances
-
-        # For the loop, we'll use numpy's vectorized operations
+        """distance reward"""
+        reward += self.distance_weight * dist
+        """obstacle distance reward"""
         reward_changes = np.where(self.link_dist < 0.2, self.obs_distance_weight * dist_change, 0)
-        reward += reward_changes.sum()  # sum up the rewards from all elements
+        reward += reward_changes.sum()
 
         return reward
 
@@ -448,7 +390,7 @@ class ReachSta(Task):
 
         # margin and weight
         self.distance_threshold = 0.05  # 5cm
-        self.orientation_threshold = 0.0873  # 5 degrees
+        self.ori_distance_threshold = 0.0873  # 5 degrees
         self.action_weight = -1
         self.collision_weight = -500
         self.distance_weight = -70
@@ -558,9 +500,9 @@ class ReachSta(Task):
         return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        dist_success = distance(achieved_goal, desired_goal) < self.distance_threshold
-        ori_success = angular_distance(achieved_goal, desired_goal) < self.orientation_threshold
-        return np.array(dist_success and ori_success, dtype=np.bool8)
+        distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold
+        orientation_success = angular_distance(achieved_goal, desired_goal) < self.ori_distance_threshold
+        return np.array(distance_success & orientation_success, dtype=np.bool8)
 
     def check_collision(self) -> bool:
         self.collision = self.sim.check_collision()
@@ -570,20 +512,21 @@ class ReachSta(Task):
         self.link_dist = self.sim.get_link_distances()
         dist_change = self.link_dist - self.last_dist
         self.last_dist = self.link_dist
-        # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
+        dist = distance(achieved_goal, desired_goal)
+        ori_dist = angular_distance(achieved_goal, desired_goal)
+
         reward = np.float64(0.0)
-
-        # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
-        dist = np.abs(distance(achieved_goal, desired_goal))
-        ori_dist = np.abs(angular_distance(achieved_goal, desired_goal))
-        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0).astype(np.float32)
+        """success reward"""
+        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0)
+        """"collision reward"""
         reward += self.collision_weight if self.collision else 0
+        """distance reward"""
         reward += self.distance_weight * dist
+        """orientation reward"""
         reward += self.orientation_weight * ori_dist
-
-        # For the loop, we'll use numpy's vectorized operations
+        """obstacle distance reward"""
         reward_changes = np.where(self.link_dist < 0.2, self.dist_change_weight * dist_change, 0)
-        reward += reward_changes.sum()  # sum up the rewards from all elements
+        reward += reward_changes.sum()
 
         return reward
 
@@ -603,7 +546,7 @@ class ReachDyn(Task):
 
         # margin and weight
         self.distance_threshold = 0.05  # 5cm
-        self.orientation_threshold = 0.0873  # 5 degrees
+        self.ori_distance_threshold = 0.0873  # 5 degrees
         self.action_weight = -1
         self.collision_weight = -500
         self.distance_weight = -70
@@ -720,9 +663,9 @@ class ReachDyn(Task):
         return obstacle
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        dist_success = distance(achieved_goal, desired_goal) < self.distance_threshold
-        ori_success = angular_distance(achieved_goal, desired_goal) < self.orientation_threshold
-        return np.array(dist_success and ori_success, dtype=np.bool8)
+        distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold
+        orientation_success = angular_distance(achieved_goal, desired_goal) < self.ori_distance_threshold
+        return np.array(distance_success & orientation_success, dtype=np.bool8)
 
     def check_collision(self) -> bool:
         self.collision = self.sim.check_collision()
@@ -732,19 +675,20 @@ class ReachDyn(Task):
         self.link_dist = self.sim.get_link_distances()
         dist_change = self.link_dist - self.last_dist
         self.last_dist = self.link_dist
-        # reward calculation refer to "Deep Reinforcement Learning for Collision Avoidance of Robotic Manipulators"
+        dist = distance(achieved_goal, desired_goal)
+        ori_dist = angular_distance(achieved_goal, desired_goal)
+
         reward = np.float64(0.0)
-
-        # Assuming achieved_goal and desired_goal are numpy arrays of the same shape
-        dist = np.abs(distance(achieved_goal, desired_goal))
-        ori_dist = np.abs(angular_distance(achieved_goal, desired_goal))
-        reward += np.where(dist < 0.05, self.success_weight, 0).astype(np.float32)
+        """success reward"""
+        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0)
+        """"collision reward"""
         reward += self.collision_weight if self.collision else 0
+        """distance reward"""
         reward += self.distance_weight * dist
+        """orientation reward"""
         reward += self.orientation_weight * ori_dist
-
-        # For the loop, we'll use numpy's vectorized operations
+        """obstacle distance reward"""
         reward_changes = np.where(self.link_dist < 0.2, self.dist_change_weight * dist_change, 0)
-        reward += reward_changes.sum()  # sum up the rewards from all elements
+        reward += reward_changes.sum()
 
         return reward
