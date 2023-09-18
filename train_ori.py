@@ -58,7 +58,6 @@ def cos_schedule(initial_value: float, total_timestep: int, warmup_step: int) ->
 
 # ---------------- Load model and continue training
 
-# timesteps = 2000000
 # env = gymnasium.make("UR5OriReach-v1", render=True)
 # check_env(env, warn=True)
 # model = SAC.load("./RobotLearn/SAC_New3/best_model", env=env)
@@ -69,7 +68,7 @@ def cos_schedule(initial_value: float, total_timestep: int, warmup_step: int) ->
 # ---------------- Training from scratch
 
 env = gymnasium.make("UR5OriReach-v1", render=True)
-check_env(env, warn=True)
+# check_env(env, warn=True)
 
 model = SAC(
     "MultiInputPolicy",

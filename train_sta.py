@@ -33,11 +33,10 @@ wandb.init(
 
 # ---------------- Load model and continue training
 
-# timesteps = 10000
-# env = gymnasium.make("UR5ObsReach-v1", render=True)
+# env = gymnasium.make("UR5StaReach-v1", render=True)
 # check_env(env, warn=True)
 # model = SAC.load("./RobotLearn2/SAC_continue/best_model", env=env)
-# log_dir = "./RobotLearn2/SAC_continue"
+# log_dir = "./RobotLearn/SAC_continue"
 # env = Monitor(env, log_dir)
 
 
