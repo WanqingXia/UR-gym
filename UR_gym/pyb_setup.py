@@ -620,6 +620,61 @@ class PyBullet:
             texture_uid = self.physics_client.loadTexture(texture_path)
             self.physics_client.changeVisualShape(self._bodies_idx[body_name], -1, textureUniqueId=texture_uid)
 
+    def create_arm(
+            self,
+            body_name: str,
+            radius: float,
+            height: float,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
+            texture_path: Optional[str] = None,
+            visual_mesh_path: Optional[str] = None,  # Existing argument
+            visual_mesh_scale: Optional[np.ndarray] = None  # <-- New argument
+    ) -> None:
+        rgba_color = rgba_color if rgba_color is not None else np.zeros(4)
+        specular_color = specular_color if specular_color is not None else np.zeros(3)
+
+        # Load the texture if provided
+        texture_id = None
+        if texture_path is not None:
+            texture_id = self.physics_client.loadTexture(texture_path)
+
+        # Use custom visual mesh if provided
+        if visual_mesh_path is not None:
+            visual_kwargs = {
+                "fileName": visual_mesh_path,
+                "meshScale": [0.00000001, 0.00000001, 0.00000001],
+                # Use the provided scale or default to [1, 1, 1]
+                "specularColor": specular_color,
+                "rgbaColor": rgba_color
+            }
+        else:
+            visual_kwargs = {
+                "radius": radius,
+                "length": height,
+                "specularColor": specular_color,
+                "rgbaColor": rgba_color,
+            }
+
+        collision_kwargs = {"radius": radius, "height": height}
+
+        self._create_geometry(
+            body_name,
+            geom_type=self.physics_client.GEOM_CYLINDER,
+            mass=mass,
+            position=position,
+            ghost=ghost,
+            lateral_friction=lateral_friction,
+            spinning_friction=spinning_friction,
+            visual_kwargs=visual_kwargs,
+            collision_kwargs=collision_kwargs,
+        )
+
     def create_sphere(
             self,
             body_name: str,

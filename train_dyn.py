@@ -14,7 +14,7 @@ from datetime import datetime
 import signal
 import wandb
 
-epochs = 2000000
+epochs = 3000000
 learning_rate = 1e-4
 gamma = 0.95
 
@@ -32,8 +32,7 @@ wandb.init(
 
 # ---------------- Load model and continue training
 
-# timesteps = 10000
-# env = gymnasium.make("UR5ObsReach-v1", render=True)
+# env = gymnasium.make("UR5DynReach-v1", render=True)
 # check_env(env, warn=True)
 # model = SAC.load("./RobotLearn2/SAC_continue/best_model", env=env)
 # log_dir = "./RobotLearn2/SAC_continue"

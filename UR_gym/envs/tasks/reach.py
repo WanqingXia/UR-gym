@@ -607,6 +607,8 @@ class ReachDyn(Task):
         )
 
     def get_obs(self) -> np.ndarray:
+        # TODO: obstacle initial position and rotation are useless when it is moving,
+        # need to change to current pose and velocity
         obstacle_position = self.sim.get_base_position("obstacle")
         obstacle_rotation = self.sim.get_base_rotation("obstacle")
         obstacle_current = np.concatenate((obstacle_position, obstacle_rotation))
