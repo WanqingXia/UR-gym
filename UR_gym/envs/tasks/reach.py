@@ -401,6 +401,9 @@ class ReachSta(Task):
 
         # Stored values
         self.obstacle = np.zeros(6)
+        self.obstacle_start = np.zeros(6)
+        self.obstacle_end = np.zeros(6)
+        self.velocity = np.zeros(6)
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
@@ -450,7 +453,10 @@ class ReachSta(Task):
         )
 
     def get_obs(self) -> np.ndarray:
-        return np.concatenate((self.goal, self.obstacle, self.link_dist))
+        obstacle_position = self.sim.get_base_position("obstacle")
+        obstacle_rotation = self.sim.get_base_rotation("obstacle")
+        obstacle_current = np.concatenate((obstacle_position, obstacle_rotation))
+        return np.concatenate((self.goal, obstacle_current, self.link_dist))
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.robot.get_ee_position())
@@ -476,13 +482,23 @@ class ReachSta(Task):
             print("Collision after reset, this should not happen")
 
     def set_goal_and_obstacle(self, test_data):
-        self.goal = test_data[:6]
-        self.obstacle = test_data[6:]
+        if len(test_data) == 12:
+            self.goal = test_data[:6]
+            self.obstacle = test_data[6:]
+            # set the rotation for obstacle to same value for linear movement
+            self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+            # set final pose to keep the environment constant
+            self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
+        else:
+            self.goal = test_data[:6]
+            self.obstacle_start = test_data[6:12]
+            self.obstacle = test_data[6:12]
+            self.obstacle_end = test_data[12:]
+            # set the rotation for obstacle to same value for linear movement
+            self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+            # set final pose to keep the environment constant
+            self.sim.set_base_pose("obstacle", self.obstacle_start[:3], self.obstacle_start[3:])
 
-        # set the rotation for obstacle to same value for linear movement
-        self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
-        # set final pose to keep the environment constant
-        self.sim.set_base_pose("obstacle", self.obstacle[:3], self.obstacle[3:])
         self.collision = self.sim.check_collision()
         self.link_dist = self.sim.get_link_distances()
         self.last_dist = self.link_dist
@@ -499,6 +515,31 @@ class ReachSta(Task):
         obstacle_rot = sample_euler_obstacle()
         obstacle = np.concatenate((obstacle_pos, obstacle_rot))
         return obstacle
+
+    def set_velocity(self):
+        """
+        This function is used to control the movement of obstacle
+        The obstacle moves in a constant speed from start pose to end pose
+        When end pose is achieved, speed is set to zero
+        """
+        if np.linalg.norm(self.obstacle_end[:3] - self.sim.get_base_position("obstacle"),  axis=-1) > 0.05:
+            time_duration = 1
+            linear_velocity = (self.obstacle_end[:3] - self.obstacle_start[:3]) / time_duration
+            # Calculating the relative rotation from start to end orientation
+            rot_end = self.sim.euler_to_quaternion(self.obstacle_end[3:])
+            rot_start = self.sim.euler_to_quaternion(self.obstacle_start[3:])
+            relative_rotation = self.sim.get_quaternion_difference(rot_start, rot_end)
+            # Convert the relative rotation quaternion to axis-angle representation
+            axis, angle = self.sim.get_axis_angle(relative_rotation)
+            # Calculate the angular velocity required to achieve the rotation in 1 second
+            angular_velocity = np.array(axis) * angle / time_duration
+            self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+            self.velocity = np.concatenate((linear_velocity, angular_velocity))
+        else:
+            linear_velocity = np.zeros(3)
+            angular_velocity = np.zeros(3)
+            self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+            self.velocity = np.concatenate((linear_velocity, angular_velocity))
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold
@@ -558,6 +599,7 @@ class ReachDyn(Task):
         # Stored values
         self.obstacle_start = np.zeros(6)
         self.obstacle_end = np.zeros(6)
+        self.velocity = np.zeros(6)
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
@@ -607,12 +649,10 @@ class ReachDyn(Task):
         )
 
     def get_obs(self) -> np.ndarray:
-        # TODO: obstacle initial position and rotation are useless when it is moving,
-        # need to change to current pose and velocity
         obstacle_position = self.sim.get_base_position("obstacle")
         obstacle_rotation = self.sim.get_base_rotation("obstacle")
         obstacle_current = np.concatenate((obstacle_position, obstacle_rotation))
-        return np.concatenate((self.goal, obstacle_current, self.link_dist))
+        return np.concatenate((self.goal, obstacle_current, self.velocity, self.link_dist))
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.robot.get_ee_position())
@@ -664,6 +704,31 @@ class ReachDyn(Task):
         obstacle_rot = sample_euler_obstacle()
         obstacle = np.concatenate((obstacle_pos, obstacle_rot))
         return obstacle
+
+    def set_velocity(self):
+        """
+        This function is used to control the movement of obstacle
+        The obstacle moves in a constant speed from start pose to end pose
+        When end pose is achieved, speed is set to zero
+        """
+        if np.linalg.norm(self.obstacle_end[:3] - self.sim.get_base_position("obstacle"),  axis=-1) > 0.05:
+            time_duration = 1
+            linear_velocity = (self.obstacle_end[:3] - self.obstacle_start[:3]) / time_duration
+            # Calculating the relative rotation from start to end orientation
+            rot_end = self.sim.euler_to_quaternion(self.obstacle_end[3:])
+            rot_start = self.sim.euler_to_quaternion(self.obstacle_start[3:])
+            relative_rotation = self.sim.get_quaternion_difference(rot_start, rot_end)
+            # Convert the relative rotation quaternion to axis-angle representation
+            axis, angle = self.sim.get_axis_angle(relative_rotation)
+            # Calculate the angular velocity required to achieve the rotation in 1 second
+            angular_velocity = np.array(axis) * angle / time_duration
+            self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+            self.velocity = np.concatenate((linear_velocity, angular_velocity))
+        else:
+            linear_velocity = np.zeros(3)
+            angular_velocity = np.zeros(3)
+            self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
+            self.velocity = np.concatenate((linear_velocity, angular_velocity))
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold

@@ -41,18 +41,7 @@ class UR5e_CHOMP():
             rgba_color=np.array([1.0, 1.0, 1.0, 1.0]),
             texture=os.getcwd() + "/UR_gym/assets/colored_cube_ori.png",
         )
-        # self.sim.create_cylinder(
-        #     body_name="obstacle",
-        #     radius=0.05,
-        #     height=0.4,
-        #     mass=0.0,
-        #     ghost=False,
-        #     position=np.array([0.0, 0.0, 1.0]),
-        #     rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
-        #     texture=os.getcwd() + "/UR_gym/assets/cylinder.png",
-        # )
-
-        self.sim.create_arm(
+        self.sim.create_cylinder(
             body_name="obstacle",
             radius=0.05,
             height=0.4,
@@ -60,8 +49,19 @@ class UR5e_CHOMP():
             ghost=False,
             position=np.array([0.0, 0.0, 1.0]),
             rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
-            visual_mesh_path=os.getcwd() + "/UR_gym/assets/arm.obj",
+            texture=os.getcwd() + "/UR_gym/assets/cylinder.png",
         )
+
+        # self.sim.create_arm(
+        #     body_name="obstacle",
+        #     radius=0.05,
+        #     height=0.4,
+        #     mass=0.0,
+        #     ghost=False,
+        #     position=np.array([0.0, 0.0, 1.0]),
+        #     rgba_color=np.array([1.0, 0.92, 0.8, 1.0]),
+        #     visual_mesh_path=os.getcwd() + "/UR_gym/assets/arm.obj",
+        # )
 
         self.sim.create_box(
             body_name="zone_goal",
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     b = np.array([-1.77311978, -0.74027606, -3.08782273])
 
     u = np.array([0.5, 0, 0.5])
-    v = np.array([0, 0, 0])
+    v = np.array([1.69558, -1.96786, 3.14159259])
     while True:
         what = sample_euler_obstacle()
         CHOMP.sim.set_base_pose("obstacle", u, v)
