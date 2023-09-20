@@ -395,6 +395,18 @@ class PyBullet:
         collision = False
         link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
 
+        # check collision between UR5 and obstacle
+        for link_num in range(2, 7):
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
+                                      distance=0.01)
+            if info:  # distance smaller than 0.01m, collision occurs
+                collision = True
+                print("Collision between ", link_list[link_num-1], " and obstacle", ". Distance: ", info[0][8])
+
+        if collision:
+            # directly return if collision happens, skip checking for other collision
+            return collision
+
         # check collision between UR5 and table and track
         for objs in [self._bodies_idx["table"], self._bodies_idx["track"]]:
             for link_num in range(2, 7):
