@@ -15,7 +15,7 @@ from datetime import datetime
 import signal
 import wandb
 
-epochs = 2000000
+epochs = 4000000
 learning_rate = 1e-4
 gamma = 0.95
 
@@ -55,7 +55,7 @@ model = SAC(
     batch_size=256,
 )
 
-log_dir = "./RobotLearn/" + "Sta_train1"
+log_dir = "./RobotLearn/" + "Sta_trainNew"
 os.makedirs(log_dir, exist_ok=True)
 env = Monitor(env, log_dir)
 

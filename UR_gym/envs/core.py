@@ -302,7 +302,9 @@ class RobotTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
-        if self.spec.id == "UR5DynReach-v1" or self.spec.id == "UR5StaReach-v1":
+        if self.spec.id == "UR5DynReach-v1":
+            self.task.set_velocity()
+        elif (self.spec.id == "UR5StaReach-v1") and (not np.array_equal(self.task.obstacle_end, np.zeros(6))):
             self.task.set_velocity()
         self.sim.step()
         collision = self.task.check_collision()
