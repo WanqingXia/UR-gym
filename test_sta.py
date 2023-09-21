@@ -11,7 +11,7 @@ from tqdm import tqdm
 # The original get_obs() function in core.py is prohibited to use, so we need to define a new one
 def get_obs(env):
     robot_obs = env.robot.get_obs().astype(np.float32)  # robot state
-    task_obs = env.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+    task_obs = env.task.get_obs().astype(np.float32)  # object position, velocity, etc...
     observation = np.concatenate([robot_obs, task_obs])
     achieved_goal = env.task.get_achieved_goal().astype(np.float32)
     obs = {
@@ -115,7 +115,5 @@ def test_robot(points):
 
 
 if __name__ == "__main__":
-    points = np.loadtxt('testset_sta.txt')
-    test_robot(points)
-    # points = np.loadtxt('testset_dyn.txt')
-    # test_dyn(points)
+    # test_robot(np.loadtxt('testset_sta.txt'))
+    test_dyn(np.loadtxt('testset_dyn.txt'))

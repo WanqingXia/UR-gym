@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 def get_obs(env):
     robot_obs = env.robot.get_obs().astype(np.float32)  # robot state
-    task_obs = env.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+    task_obs = env.task.get_obs().astype(np.float32)  # object position, velocity, etc...
     observation = np.concatenate([robot_obs, task_obs])
     achieved_goal = env.task.get_achieved_goal().astype(np.float32)
     obs = {
@@ -66,5 +66,4 @@ def test_robot(points):
 
 
 if __name__ == "__main__":
-    points = np.loadtxt('testset_ori.txt')
-    test_robot(points)
+    test_robot(points = np.loadtxt('testset_ori.txt'))
