@@ -68,4 +68,4 @@ def test_robot(points):
 
 
 if __name__ == "__main__":
-    test_robot(points = np.loadtxt('testset_obs.txt'))
+    test_robot(np.loadtxt('testset_obs.txt'))
