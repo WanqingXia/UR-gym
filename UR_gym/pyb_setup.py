@@ -392,7 +392,6 @@ class PyBullet:
         Print: link name that collides
         Return: collision (bool): Whether collision is occurred
         """
-        collision = False
         link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
 
         # check collision between UR5 and obstacle
@@ -400,12 +399,8 @@ class PyBullet:
             info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
                                       distance=0.01)
             if info:  # distance smaller than 0.01m, collision occurs
-                collision = True
                 print("Collision between ", link_list[link_num-1], " and obstacle", ". Distance: ", info[0][8])
-
-        if collision:
-            # directly return if collision happens, skip checking for other collision
-            return collision
+                return True
 
         # check collision between UR5 and table and track
         for objs in [self._bodies_idx["table"], self._bodies_idx["track"]]:
@@ -413,13 +408,9 @@ class PyBullet:
                 info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
                                           distance=0.01)
                 if info:  # distance smaller than 0.01m, collision occurs
-                    collision = True
                     linkB = "Table" if info[0][2] == 3 else "Track"
                     print("Collision between ", link_list[link_num-1], " and ", linkB, ". Distance: ", info[0][8])
-
-        if collision:
-            # directly return if collision happens, skip checking for UR5 self-collision
-            return collision
+                    return True
 
         # check collision for UR5 self-collision
         start = 3  # start from 3 and increase in every loop
@@ -428,12 +419,12 @@ class PyBullet:
                 info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["UR5"], linkIndexA=link_numA,
                                           linkIndexB=link_numB, distance=0.01)
                 if info:  # distance smaller than 0.01m, collision occurs
-                    collision = True
                     print("Collision between ", link_list[link_numA - 1],
                           " and ", link_list[link_numB - 1], ". Distance: ", info[0][8])
+                    return True
             start += 1
 
-        return collision
+        return False
 
     def get_target_to_obstacle_distance(self):
         """
