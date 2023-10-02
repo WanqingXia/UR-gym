@@ -396,7 +396,8 @@ class ReachSta(Task):
         self.collision_weight = -500
         self.distance_weight = -70
         self.orientation_weight = -30
-        self.dist_change_weight = 100
+        link_weights = [8, 2.4, 1.2, 1.2, 0.2]
+        self.dist_change_weight = np.array(link_weights) / np.sum(link_weights) * 50
         self.success_weight = 200
 
         # Stored values
@@ -593,7 +594,8 @@ class ReachDyn(Task):
         self.collision_weight = -500
         self.distance_weight = -70
         self.orientation_weight = -30
-        self.dist_change_weight = 100
+        link_weights = [8, 2.4, 1.2, 1.2, 0.2]
+        self.dist_change_weight = np.array(link_weights) / np.sum(link_weights) * 50
         self.success_weight = 200
 
         # Stored values
@@ -603,6 +605,7 @@ class ReachDyn(Task):
         self.collision = False
         self.link_dist = np.zeros(5)
         self.last_dist = np.zeros(5)
+        self.step_num = 0
 
         with self.sim.no_rendering():
             self._create_scene()
@@ -661,6 +664,7 @@ class ReachDyn(Task):
 
     def reset(self) -> None:
         self.collision = False
+        self.step_num = 0
         distance_fail = True
         while distance_fail:
             self.goal = self._sample_goal()
@@ -711,7 +715,8 @@ class ReachDyn(Task):
         The obstacle moves in a constant speed from start pose to end pose
         When end pose is achieved, speed is set to zero
         """
-        if np.linalg.norm(self.obstacle_end[:3] - self.sim.get_base_position("obstacle"),  axis=-1) > 0.05:
+
+        if self.step_num < 25:
             time_duration = 1
             linear_velocity = (self.obstacle_end[:3] - self.obstacle_start[:3]) / time_duration
             # Calculating the relative rotation from start to end orientation
@@ -729,6 +734,7 @@ class ReachDyn(Task):
             angular_velocity = np.zeros(3)
             self.sim.set_velocity("obstacle", linear_velocity, angular_velocity)
             self.velocity = np.concatenate((linear_velocity, angular_velocity))
+        self.step_num += 1
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         distance_success = distance(achieved_goal, desired_goal) < self.distance_threshold
