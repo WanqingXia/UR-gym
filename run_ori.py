@@ -23,7 +23,7 @@ def get_obs(env):
     return obs, info
 
 
-def test_robot(points):
+def run_ori(points):
     # ---------------- Create environment
     env = gymnasium.make("UR5OriReach-v1", render=True)
 
@@ -66,4 +66,4 @@ def test_robot(points):
 
 
 if __name__ == "__main__":
-    test_robot(np.loadtxt('testset_ori.txt'))
+    run_ori(np.loadtxt('testset_ori.txt'))

@@ -24,13 +24,13 @@ def get_obs(env):
     return obs, info
 
 
-def test_robot(points):
+def run_obs(points):
     # ---------------- Create environment
-    env = gymnasium.make("UR5DynReach-v1", render=True)
+    env = gymnasium.make("UR5ObsReach-v1", render=True)
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "./RobotLearn/Dyn_train6/"
+    model_path = "./Trained_Obs/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
@@ -68,4 +68,4 @@ def test_robot(points):
 
 
 if __name__ == "__main__":
-    test_robot(np.loadtxt('testset_dyn.txt'))
+    run_obs(np.loadtxt('testset_obs.txt'))
