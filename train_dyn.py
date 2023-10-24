@@ -14,7 +14,7 @@ from datetime import datetime
 import signal
 import wandb
 
-epochs = 4000000
+epochs = 6000000
 learning_rate = 1e-4
 gamma = 0.95
 
@@ -32,31 +32,31 @@ wandb.init(
 
 # ---------------- Load model and continue training
 
-env = gymnasium.make("UR5DynReach-v1", render=True)
-# check_env(env, warn=True)
-model = SAC.load("./RobotLearn/Dyn_train6/best_model", env=env)
-log_dir = "./RobotLearn/Dyn_train6"
-env = Monitor(env, log_dir)
+# env = gymnasium.make("UR5DynReach-v1", render=True)
+# # check_env(env, warn=True)
+# model = SAC.load("./RobotLearn/Dyn_train6/best_model", env=env)
+# log_dir = "./RobotLearn/Dyn_train6"
+# env = Monitor(env, log_dir)
 
 
 # ---------------- Training from scratch
 
-# env = gymnasium.make("UR5DynReach-v1", render=True)
-# # check_env(env, warn=True)
-#
-# model = SAC(
-#     "MultiInputPolicy",
-#     env,
-#     verbose=1,
-#     buffer_size=int(1e7),
-#     learning_rate=learning_rate,
-#     gamma=gamma,
-#     batch_size=256,
-# )
-#
-# log_dir = "./RobotLearn/" + "Dyn_train6"
-# os.makedirs(log_dir, exist_ok=True)
-# env = Monitor(env, log_dir)
+env = gymnasium.make("UR5DynReach-v1", render=True)
+# check_env(env, warn=True)
+
+model = SAC(
+    "MultiInputPolicy",
+    env,
+    verbose=1,
+    buffer_size=int(1e7),
+    learning_rate=learning_rate,
+    gamma=gamma,
+    batch_size=256,
+)
+
+log_dir = "./RobotLearn/" + "Dyn_train7"
+os.makedirs(log_dir, exist_ok=True)
+env = Monitor(env, log_dir)
 
 # ---------------- Callback functions
 callback_save_best_model = EvalCallback(wandb, env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=1000,
