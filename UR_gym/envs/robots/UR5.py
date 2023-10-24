@@ -287,26 +287,19 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        # ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
-        # # get the current position and the target position
-        # ee_position = self.get_ee_position()
-        # target_ee_position = ee_position + ee_displacement
-        # # Clip the height target. For some reason, it has a great impact on learning
-        # target_ee_position[2] = np.max((0, target_ee_position[2]))
-        # # compute the new joint angles
-        # target_arm_angles = self.inverse_kinematics(
-        #     link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
-        # )
-        # target_arm_angles = target_arm_angles[:6]  # remove fingers angles
-        # return target_arm_angles
+        ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
         # get the current position and the target position
+        ee_position = self.get_ee_position()
+        target_ee_position = ee_position + ee_displacement
+        # Clip the height target. For some reason, it has a great impact on learning
+        target_ee_position[2] = np.max((0, target_ee_position[2]))
         # compute the new joint angles
-
-        """this part of the code is used for testing (inv_kin.py), for control robot with ee position, need to restore
-        the code above"""
         target_arm_angles = self.inverse_kinematics(
-            link=self.ee_link, position=ee_displacement[:3], orientation=np.roll(ee_displacement[3:], -1))
+            link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
+        )
+        target_arm_angles = target_arm_angles[:6]  # remove fingers angles
         return target_arm_angles
+
 
     def arm_joint_ctrl_to_target_arm_angles(self, arm_joint_ctrl: np.ndarray) -> np.ndarray:
         """Compute the target arm angles from the arm joint control.

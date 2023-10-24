@@ -7,8 +7,6 @@ Code developed base on panda-gym https://github.com/qgallouedec/panda-gym
 ## Installation
 ```bash
 git clone https://github.com/WanqingXia/UR-gym.git
-pip install -e UR-gym
-pip install git+https://github.com/carlosluis/stable-baselines3@fix_tests
 ```
 
 ## Usage

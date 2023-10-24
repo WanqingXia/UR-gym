@@ -12,7 +12,6 @@ sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../'))
 import gymnasium
 import UR_gym
 sys.modules["gym"] = gymnasium
-from ur_ikfast import ur_kinematics
 import numpy as np
 
 import pb_ompl
@@ -78,25 +77,19 @@ class UR5e_ompl():
 if __name__ == '__main__':
 
     env = gymnasium.make("UR5OriReach-v1", render=True)
-    ur5e = ur_kinematics.URKinematics('ur5e')
-    initial = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
-    points = np.loadtxt('new_testset.txt')
+    points = np.loadtxt('testset_dyn.txt')
     success = np.zeros(points.shape[0])
-    dist = np.zeros(points.shape[0])
 
     URompl = pb_ompl.PbOMPL(env.robot)
     URompl.set_planner("RRTStar")
 
     for trials in tqdm(range(points.shape[0])):
-        joints = initial.copy()
-        angles = ur5e.inverse((points[trials, :]), False)
-        env.task.set_goal(points[trials, :])
         obs = env.reset()
-        if angles is None:
-            print("found one broken point")
-            continue
-
-        env.robot.set_state(joints)
+        ee_pos = points[trials, 12:15]
+        ee_ori = env.sim.euler_to_quaternion(points[trials, 15: 18])
+        angles = env.sim.inverse_kinematics("UR5", 7, ee_pos, ee_ori)
+        env.task.set_goal(points[trials, 12:18])
+        obs = env.reset()
 
         res, path, solved = URompl.plan(angles)
         if res:
@@ -104,41 +97,10 @@ if __name__ == '__main__':
             URompl.execute(path, dynamics=False)
             success[trials] = True
             path = np.array(path)
-            for i in range(path.shape[0] - 1):
-                dist[trials] += np.sum(np.abs(path[i+1, :] - path[i, :]))
+
         else:
             pass
 
     success_rate = (np.sum(success) / success.size) * 100
     print("The success rate is {}%".format(success_rate))
     stop = 1
-
-
-    # initial = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
-    # ur5e = ur_kinematics.URKinematics('ur5e')
-    # points = np.loadtxt('testset_ori.txt')
-    # success = np.zeros(points.shape[0])
-    # dist = np.zeros(points.shape[0])
-    # UR5 = UR5e_ompl()
-    #
-    # for trials in tqdm(range(points.shape[0])):
-    #     joints = initial.copy()
-    #     angles = ur5e.inverse((points[trials, :]), False)
-    #     if angles is None:
-    #         print("found one broken point")
-    #         continue
-    #     UR5.set_goal(angles)
-    #     res, path = UR5.solve()
-    #     if res:
-    #         success[trials] = True
-    #         path = np.array(path)
-    #         for i in range(path.shape[0] - 1):
-    #             dist[trials] += np.sum(np.abs(path[i+1, :] - path[i, :]))
-    #     else:
-    #         pass
-    #
-    #     success_rate = (np.sum(success) / success.size) * 100
-    #     print("The success rate is {}%".format(success_rate))
-    #     np.savetxt('RRTStar.txt', np.transpose(dist))
-
-

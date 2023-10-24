@@ -4,8 +4,6 @@ import numpy as np
 from pyquaternion import Quaternion
 from UR_gym.envs.core import Task
 from UR_gym.utils import *
-from ur_ikfast import ur_kinematics
-ur5e = ur_kinematics.URKinematics('ur5e')
 
 
 class ReachIAI(Task):
