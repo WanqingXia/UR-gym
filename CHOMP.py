@@ -7,7 +7,6 @@ import os
 from UR_gym.envs.robots.UR5 import UR5Ori
 from UR_gym.pyb_setup import PyBullet
 import numpy as np
-from pyquaternion import Quaternion
 from UR_gym.utils import *
 
 class UR5e_CHOMP():
@@ -151,6 +150,15 @@ class UR5e_CHOMP():
 
 if __name__ == '__main__':
     CHOMP = UR5e_CHOMP()
+
+    eepos = np.array([0.35506645, - 0.03414946,  0.04011879])
+    eeori = np.array(CHOMP.sim.euler_to_quaternion([- 1.70473648,  0., - 1.36369828]))
+    angles = CHOMP.compute_inverse_kinematics(eepos, eeori)
+    CHOMP.robot.set_joint_angles(angles=angles)
+    CHOMP.sim.step()
+    time.sleep(0.5)
+    stop = 1
+
 
     initial_trajectory = CHOMP.initialize_trajectory()
     trajectory = CHOMP.chomp_gradient_descent(initial_trajectory)

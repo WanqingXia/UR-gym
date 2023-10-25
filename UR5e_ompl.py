@@ -76,7 +76,7 @@ class UR5e_ompl():
 
 if __name__ == '__main__':
 
-    env = gymnasium.make("UR5OriReach-v1", render=True)
+    env = gymnasium.make("UR5DynReach-v1", render=True)
     points = np.loadtxt('testset_dyn.txt')
     success = np.zeros(points.shape[0])
 
@@ -85,21 +85,28 @@ if __name__ == '__main__':
 
     for trials in tqdm(range(points.shape[0])):
         obs = env.reset()
-        ee_pos = points[trials, 12:15]
-        ee_ori = env.sim.euler_to_quaternion(points[trials, 15: 18])
+        ee_pos = points[trials, 0:3]
+        ee_ori = env.sim.euler_to_quaternion(points[trials, 3:6])
         angles = env.sim.inverse_kinematics("UR5", 7, ee_pos, ee_ori)
-        env.task.set_goal(points[trials, 12:18])
-        obs = env.reset()
+        env.task.set_goal_and_obstacle(points[trials, :])
 
-        res, path, solved = URompl.plan(angles)
+        env.robot.set_joint_angles(angles)
+        env.sim.step()
+        robot_obs = env.robot.get_obs()
+        stop =1
+
+
+        res, path = URompl.plan(angles)
         if res:
-            print(str(solved))
             URompl.execute(path, dynamics=False)
             success[trials] = True
             path = np.array(path)
-
+            obs = env.task.get_obs()
+            robot_obs = env.robot.get_obs()
+            stop = 1
         else:
             pass
+        time.sleep(2)
 
     success_rate = (np.sum(success) / success.size) * 100
     print("The success rate is {}%".format(success_rate))
