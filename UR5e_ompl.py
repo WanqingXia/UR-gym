@@ -83,11 +83,12 @@ if __name__ == '__main__':
     URompl = pb_ompl.PbOMPL(env.robot)
     URompl.set_planner("RRTStar")
 
-    for trials in tqdm(range(points.shape[0])):
+    for trials in tqdm(range(4960, 4970)):
         obs = env.reset()
         ee_pos = points[trials, 0:3]
         ee_ori = env.sim.euler_to_quaternion(points[trials, 3:6])
         angles = env.sim.inverse_kinematics("UR5", 7, ee_pos, ee_ori)
+        angles = np.array([ 0.54116476, -0.73962382,  3.50326859, -0.97097593,  1.35965961,  0.75535751])
         env.task.set_goal_and_obstacle(points[trials, :])
 
         env.robot.set_joint_angles(angles)
