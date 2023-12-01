@@ -15,13 +15,30 @@ def generate_dyn():
     # ------- Create environment----------
     env = gymnasium.make("UR5DynReach-v1", render=True)
 
-    save_goals = np.zeros((5000, 18))
-    for counter in range(save_goals.shape[0]):
-        env.task.reset()
-        obs = env.task.get_obs()
-        save_goals[counter, :6] = obs[:6]
-        save_goals[counter, 6:12] = env.task.obstacle_start
-        save_goals[counter, 12:] = env.task.obstacle_end
+    low = env.task.goal_range_low
+    high = env.task.goal_range_high
+
+    # Calculate the number of steps for each dimension
+    num_steps = [int((high[i] - low[i]) / 0.05) + 1 for i in range(len(low))]
+
+    # Create an empty array with 18 columns
+    save_goals = np.empty((0, 18))
+
+    # Iterate through each point in the range with 0.05 increments
+    for i in range(num_steps[0]):
+        for j in range(num_steps[1]):
+            for k in range(num_steps[2]):
+                for w in range(5):
+                    env.task.reset_generate(i, j, k)
+                    obs = env.task.get_obs()
+                    data_temp = np.zeros((1, 18))
+                    data_temp[0, :6] = obs[:6]
+                    data_temp[0, 6:12] = env.task.obstacle_start
+                    data_temp[0, 12:] = env.task.obstacle_end
+                    # stack data
+                    save_goals = np.vstack((save_goals, data_temp))
+
+    # Convert the list to a numpy array
     np.savetxt("testset_dyn.txt", save_goals)
 
 

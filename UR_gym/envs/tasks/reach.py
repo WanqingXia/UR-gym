@@ -681,6 +681,23 @@ class ReachDyn(Task):
         if self.collision:
             print("Collision after reset, this should not happen")
 
+    # def reset_generate(self, i, j, k) -> None:
+    #     self.collision = False
+    #     distance_fail = True
+    #     while distance_fail:
+    #         goal_pos = np.array([self.goal_range_low[0] + i * 0.05, self.goal_range_low[1] + j * 0.05, self.goal_range_low[2] + k * 0.05])
+    #
+    #         goal_rot = sample_euler_constrained()
+    #         goal = np.concatenate((goal_pos, goal_rot))
+    #         self.goal = goal
+    #
+    #         self.obstacle_start = self._sample_obstacle()
+    #         self.obstacle_end = self._sample_obstacle()
+    #         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+    #         self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
+    #         start_end_dist = distance(self.obstacle_end, self.obstacle_start)
+    #         distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 0.3)
+
     def set_goal_and_obstacle(self, test_data):
         self.goal = test_data[:6]
         self.obstacle_start = test_data[6:12]
@@ -715,7 +732,7 @@ class ReachDyn(Task):
         """
 
         if self.step_num < 25:
-            time_duration = 1
+            time_duration = 2
             linear_velocity = (self.obstacle_end[:3] - self.obstacle_start[:3]) / time_duration
             # Calculating the relative rotation from start to end orientation
             rot_end = self.sim.euler_to_quaternion(self.obstacle_end[3:])
@@ -744,23 +761,24 @@ class ReachDyn(Task):
         return self.collision
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        self.link_dist = self.sim.get_link_distances()
-        dist_change = self.link_dist - self.last_dist
-        self.last_dist = self.link_dist
+        """"collision reward"""
+        if self.collision:
+            return np.float64(self.collision_weight)
+        """success reward"""
+        if self.is_success(achieved_goal, desired_goal):
+            return np.float64(self.success_weight)
+        """distance reward"""
         dist = distance(achieved_goal, desired_goal)
         ori_dist = angular_distance(achieved_goal, desired_goal)
-
         reward = np.float64(0.0)
-        """success reward"""
-        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0)
-        """"collision reward"""
-        reward += self.collision_weight if self.collision else 0
-        """distance reward"""
+
         reward += self.distance_weight * dist
         """orientation reward"""
         reward += self.orientation_weight * ori_dist
         """obstacle distance reward"""
+        self.link_dist = self.sim.get_link_distances()
+        dist_change = self.link_dist - self.last_dist
+        self.last_dist = self.link_dist
         reward_changes = np.where(self.link_dist < 0.2, self.dist_change_weight * dist_change, 0)
         reward += reward_changes.sum()
-
         return reward

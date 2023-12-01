@@ -444,24 +444,14 @@ class PyBullet:
         link_dist = np.zeros(5)
 
         # check collision between UR5 and obstacle
-        for link_num in range(2, 7):
+        for link_num in range(5):
             # From link2-6 represents: upperarm link, forearm link, wrist1, wrist2, wrist3, verified in robot_show.py
             # Link1 is the Shoulder which is fixed on the track and never collide
 
             # set margin to be a large number to make sure we always get data to fill link_dist
-            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
-                                      distance=5.0)
-            dist_temp = info[0][8]
-
-            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["track"], linkIndexA=link_num,
-                                      distance=5.0)
-            dist_temp = info[0][8] if dist_temp > info[0][8] else dist_temp
-
-            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["table"], linkIndexA=link_num,
-                                      distance=5.0)
-            dist_temp = info[0][8] if dist_temp > info[0][8] else dist_temp
-
-            link_dist[link_num - 2] = dist_temp
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"],
+                                      linkIndexA=link_num+2, distance=5.0)
+            link_dist[link_num] = info[0][8]
 
         return link_dist
 

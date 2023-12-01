@@ -311,7 +311,7 @@ class UR5Ori(PyBulletRobot):
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
         # TODO: currently, every timestamp is 0.1s, may need to change on real robot
-        arm_joint_ctrl = arm_joint_ctrl * 0.01  # limit maximum change in position, 0.03 rad everytime
+        arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.03 rad everytime
         # get the current position and the target position
         current_arm_joint_angles = np.array(self.get_joint_angles())
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl

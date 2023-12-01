@@ -30,7 +30,7 @@ def run_dyn(points):
 
     # ----------------- Load the pre-trained model from files
     print("load the pre-trained model from files")
-    model_path = "./RobotLearn/Dyn_train6/"
+    model_path = "./RobotLearn/Dyn_train11/"
     model = SAC.load(model_path + "best_model", env=env)
     obs = env.reset()
 
