@@ -34,7 +34,7 @@ class UR5(PyBulletRobot):
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
+        self.neutral_joint_values = np.array([0.0, -1.5708, 0.0, 0.0, 0.0, 0.0])
         self.ee_link = 6  # the id of ee_link
 
         """gripper related parameters, not used fro now"""
@@ -259,7 +259,7 @@ class UR5Ori(PyBulletRobot):
             joint_forces=np.array([150.0, 150.0, 150.0, 28.0, 28.0, 28.0]),  # may need to add all joint fingers later
         )
 
-        self.neutral_joint_values = np.array([0.0, -1.57, 0.0, 0.0, 0.0, 0.0])
+        self.neutral_joint_values = np.array([0.0, -1.5708, 0.0, -1.5708, 0.0, 0.0])
         self.ee_link = 7  # the id of ee_link
         self.block_gripper = block_gripper
 
@@ -287,26 +287,19 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        # ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
-        # # get the current position and the target position
-        # ee_position = self.get_ee_position()
-        # target_ee_position = ee_position + ee_displacement
-        # # Clip the height target. For some reason, it has a great impact on learning
-        # target_ee_position[2] = np.max((0, target_ee_position[2]))
-        # # compute the new joint angles
-        # target_arm_angles = self.inverse_kinematics(
-        #     link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
-        # )
-        # target_arm_angles = target_arm_angles[:6]  # remove fingers angles
-        # return target_arm_angles
+        ee_displacement = ee_displacement[:3] * 0.1  # limit maximum change in with 0.1 seconds
         # get the current position and the target position
+        ee_position = self.get_ee_position()
+        target_ee_position = ee_position + ee_displacement
+        # Clip the height target. For some reason, it has a great impact on learning
+        target_ee_position[2] = np.max((0, target_ee_position[2]))
         # compute the new joint angles
-
-        """this part of the code is used for testing (inv_kin.py), for control robot with ee position, need to restore
-        the code above"""
         target_arm_angles = self.inverse_kinematics(
-            link=self.ee_link, position=ee_displacement[:3], orientation=np.roll(ee_displacement[3:], -1))
+            link=self.ee_link, position=target_ee_position, orientation=np.array([1.0, 0.0, 0.0, 0.0])
+        )
+        target_arm_angles = target_arm_angles[:6]  # remove fingers angles
         return target_arm_angles
+
 
     def arm_joint_ctrl_to_target_arm_angles(self, arm_joint_ctrl: np.ndarray) -> np.ndarray:
         """Compute the target arm angles from the arm joint control.
@@ -317,7 +310,8 @@ class UR5Ori(PyBulletRobot):
         Returns:
             np.ndarray: Target arm angles, as the angles of the 6 arm joints.
         """
-        arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.3 rad everytime
+        # TODO: currently, every timestamp is 0.1s, may need to change on real robot
+        arm_joint_ctrl = arm_joint_ctrl * 0.1  # limit maximum change in position, 0.03 rad everytime
         # get the current position and the target position
         current_arm_joint_angles = np.array(self.get_joint_angles())
         target_arm_angles = current_arm_joint_angles + arm_joint_ctrl
@@ -327,10 +321,8 @@ class UR5Ori(PyBulletRobot):
         # end-effector position, orientation and velocity
         ee_position = np.array(self.get_ee_position())
         ee_orientation = np.array(self.get_ee_orientation())
-        # ee_velocity = np.array(self.get_ee_velocity())
         joint_angles = np.array(self.get_joint_angles())
-        observation = np.concatenate((ee_position, ee_orientation, joint_angles))
-        return observation
+        return np.concatenate((ee_position, ee_orientation, joint_angles))
 
     def reset(self) -> None:
         self.set_joint_neutral()
@@ -344,7 +336,7 @@ class UR5Ori(PyBulletRobot):
         return self.get_link_position(self.ee_link)
 
     def get_ee_orientation(self) -> np.ndarray:
-        """Returns the orientation of the end-effector as (x, y, z, real)"""
+        """Returns the orientation of the end-effector as euler(x, y, z)"""
         return self.get_link_orientation(self.ee_link)
 
     def get_ee_velocity(self) -> np.ndarray:

@@ -148,6 +148,9 @@ class PyBullet:
 
             return px
 
+    def euler_to_quaternion(self, euler):
+        return self.physics_client.getQuaternionFromEuler(euler)
+
     def get_base_position(self, body: str) -> np.ndarray:
         """Get the position of the body.
 
@@ -228,7 +231,7 @@ class PyBullet:
         position = self.physics_client.getLinkState(self._bodies_idx[body], link)[0]
         return np.array(position)
 
-    def get_link_orientation(self, body: str, link: int) -> np.ndarray:
+    def get_link_orientation(self, body: str, link: int, type: str = "euler") -> np.ndarray:
         """Get the orientation of the link of the body.
 
         Args:
@@ -239,7 +242,15 @@ class PyBullet:
             np.ndarray: The quaternion rotation, as (rx, ry, rz, w).
         """
         orientation = self.physics_client.getLinkState(self._bodies_idx[body], link)[1]
-        return np.array(orientation)
+
+        if type == "euler":
+            "yaw-pitch-roll (ZYX) "
+            rotation = self.physics_client.getEulerFromQuaternion(orientation)
+            return np.array(rotation)
+        elif type == "quaternion":
+            return np.array(orientation)
+        else:
+            raise ValueError("""type must be "euler" or "quaternion".""")
 
     def get_link_velocity(self, body: str, link: int) -> np.ndarray:
         """Get the velocity of the link of the body.
@@ -326,6 +337,31 @@ class PyBullet:
         """
         self.physics_client.resetJointState(bodyUniqueId=self._bodies_idx[body], jointIndex=joint, targetValue=angle)
 
+    def set_velocity(self, body: str, linear_velocity, angular_velocity):
+        """Set the object velocity.
+
+        Args:
+            body (str): Body unique name.
+            linear_velocity (np.ndarray): List of linear velocity in three directions.
+            angular_velocity (np.ndarray): List of angular velocity in three directions.
+        """
+        self.physics_client.resetBaseVelocity(self._bodies_idx[body],
+                                              linearVelocity=linear_velocity, angularVelocity=angular_velocity)
+
+    def get_quaternion_difference(self, start_quaternion, end_quaternion):
+        """get the difference between quaternions.
+
+        Args:
+            :param start_quaternion: starting orientation
+            :param end_quaternion: ending orientation
+        """
+
+        return self.physics_client.getDifferenceQuaternion(start_quaternion, end_quaternion)
+
+    def get_axis_angle(self, relative_rotation):
+
+        return self.physics_client.getAxisAngleFromQuaternion(relative_rotation)
+
     def control_joints(self, body: str, joints: np.ndarray, target_angles: np.ndarray, forces: np.ndarray) -> None:
         """Control the joints motor.
 
@@ -344,89 +380,83 @@ class PyBullet:
         )
 
     def check_collision(self):
-        """Check the collision between workbench and UR5
+        """Check the collision between workbench and UR5, collision margin 1cm (0.01m)
 
-        Possible collisions: table with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
-                             track with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
-                             collision margin 1cm (0.01m)
+        Possible collisions: table with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
+                             track with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
+                             obstacle with UR5 link 2, 3, 4, 5, 6 (link 1 never collide)
+                             Link1 with Link 3, 4, 5, 6
+                             Link2 with Link 4, 5, 6
+                             Link3 with Link 5, 6
+                             Link 4, 5, 6 never collide with each other
         Print: link name that collides
         Return: collision (bool): Whether collision is occurred
         """
-        collision = False
-        for table_and_track in [self._bodies_idx["table"], self._bodies_idx["track"]]:
-            for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
-                if (link_num == 0) or (link_num == 6):
-                    pass  # link 0 and 6 of robot can never collide
-                else:
-                    info = p.getClosestPoints(self._bodies_idx["UR5"], table_and_track, linkIndexA=link_num,
-                                              distance=0.01)
-                    if info:  # distance smaller than 0.01m, collision occurs
-                        collision = True
-                        linkA = "None"
-                        if link_num == 1:
-                            linkA = "upper_arm_link"
-                        elif link_num == 2:
-                            linkA = "fore_arm_link"
-                        elif link_num == 3:
-                            linkA = "wrist_1_link"
-                        elif link_num == 4:
-                            linkA = "wrist_2_link"
-                        elif link_num == 5:
-                            linkA = "wrist_3_link"
+        link_list = ["shoulder_link", "upper_arm_link", "fore_arm_link", "wrist_1_link", "wrist_2_link", "wrist_3_link"]
 
-                        linkB = "Table" if info[0][2] == 3 else "Track"
-                        print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[0][8])
+        # check collision between UR5 and obstacle
+        keys = list(self._bodies_idx)
+        if keys[5] == 'obstacle':
+            for link_num in range(2, 7):
+                info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"], linkIndexA=link_num,
+                                          distance=0.01)
+                if info:  # distance smaller than 0.01m, collision occurs
+                    print("Collision between ", link_list[link_num-1], " and obstacle", ". Distance: ", info[0][8])
+                    return True
 
-        return collision
+        # check collision between UR5 and table and track
+        for objs in [self._bodies_idx["table"], self._bodies_idx["track"]]:
+            for link_num in range(2, 7):
+                info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
+                                          distance=0.01)
+                if info:  # distance smaller than 0.01m, collision occurs
+                    linkB = "Table" if info[0][2] == 3 else "Track"
+                    print("Collision between ", link_list[link_num-1], " and ", linkB, ". Distance: ", info[0][8])
+                    return True
 
-    def check_collision_obs(self):
-        """Check the collision between workbench and UR5
+        # check collision for UR5 self-collision
+        start = 3  # start from 3 and increase in every loop
+        for link_numA in range(1, 4):
+            for link_numB in range(start, 7):
+                info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["UR5"], linkIndexA=link_numA,
+                                          linkIndexB=link_numB, distance=0.01)
+                if info:  # distance smaller than 0.01m, collision occurs
+                    print("Collision between ", link_list[link_numA - 1],
+                          " and ", link_list[link_numB - 1], ". Distance: ", info[0][8])
+                    return True
+            start += 1
 
-        Possible collisions: table with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
-                             track with UR5 link 1, 2, 3, 4, 5 (link 0, 6 can never collide)
-                             collision margin 1cm (0.01m)
-        Print: link name that collides
-        Return: collision (bool): Whether collision is occurred
+        return False
+
+    def get_target_to_obstacle_distance(self):
         """
-        collision = False
+        Check the distance between obstacle and goal, smaller than 10cm is not appropriate
+        :return: A bool value of whether the distance is smaller than 10cm
+        """
+        info = p.getClosestPoints(self._bodies_idx["target"], self._bodies_idx["obstacle"], distance=5)
+        return info[0][8]
+
+    def get_link_distances(self):
+        """Check the distance between workbench, obstacle and UR5, collision margin 1cm (0.01m)
+
+        Return: link_dist (arr): Array of robot links to any obstacle
+        """
         link_dist = np.zeros(5)
-        for objs in [self._bodies_idx["table"], self._bodies_idx["track"], self._bodies_idx["obstacle"]]:
-            for link_num in range(self.physics_client.getNumJoints(self._bodies_idx["UR5"])):
-                if (link_num == 0) or (link_num == 6):
-                    pass  # link 0 and 6 of robot can never collide
-                else:
-                    """need to use different margin for obstacle"""
-                    if objs == self._bodies_idx["obstacle"]:
-                        # set margin to be a large number to make sure we always get data
-                        info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
-                                                  distance=5.0)
-                        collision |= (info[0][8] < 0.01)
-                        link_dist[link_num-1] = info[0][8]
-                        if info[0][8] < 0.01:
-                            print("Collision between link ", link_num, " and obstacle. Distance: ", info[0][8])
-                    else:
-                        info = p.getClosestPoints(self._bodies_idx["UR5"], objs, linkIndexA=link_num,
-                                                  distance=0.01)
-                        if info:  # distance smaller than 0.01m, collision occurs
-                            collision = True
-                            linkA = "None"
-                            if link_num == 1:
-                                linkA = "upper_arm_link"
-                            elif link_num == 2:
-                                linkA = "fore_arm_link"
-                            elif link_num == 3:
-                                linkA = "wrist_1_link"
-                            elif link_num == 4:
-                                linkA = "wrist_2_link"
-                            elif link_num == 5:
-                                linkA = "wrist_3_link"
 
-                            linkB = "Table" if info[0][2] == 3 else "Track"
-                            print("Collision between ", linkA, " and ", linkB, ". Distance: ", info[0][8])
+        # check collision between UR5 and obstacle
+        for link_num in range(5):
+            # From link2-6 represents: upperarm link, forearm link, wrist1, wrist2, wrist3, verified in robot_show.py
+            # Link1 is the Shoulder which is fixed on the track and never collide
 
-        return collision, link_dist
+            # set margin to be a large number to make sure we always get data to fill link_dist
+            info = p.getClosestPoints(self._bodies_idx["UR5"], self._bodies_idx["obstacle"],
+                                      linkIndexA=link_num+2, distance=5.0)
+            link_dist[link_num] = info[0][8]
+
+        return link_dist
 
     def inverse_kinematics(self, body: str, link: int, position: np.ndarray, orientation: np.ndarray) -> np.ndarray:
+        "Do NOT use this function, the solution is not accurate"
         """Compute the inverse kinematics and return the new joint state.
 
         Args:
@@ -542,6 +572,7 @@ class PyBullet:
             ghost: bool = False,
             lateral_friction: Optional[float] = None,
             spinning_friction: Optional[float] = None,
+            texture: Optional[str] = None,
     ) -> None:
         """Create a cylinder.
 
@@ -568,6 +599,65 @@ class PyBullet:
             "rgbaColor": rgba_color,
         }
         collision_kwargs = {"radius": radius, "height": height}
+        self._create_geometry(
+            body_name,
+            geom_type=self.physics_client.GEOM_CYLINDER,
+            mass=mass,
+            position=position,
+            ghost=ghost,
+            lateral_friction=lateral_friction,
+            spinning_friction=spinning_friction,
+            visual_kwargs=visual_kwargs,
+            collision_kwargs=collision_kwargs,
+        )
+        if texture is not None:
+            texture_path = os.path.join(UR_gym.assets.get_data_path(), texture)
+            texture_uid = self.physics_client.loadTexture(texture_path)
+            self.physics_client.changeVisualShape(self._bodies_idx[body_name], -1, textureUniqueId=texture_uid)
+
+    def create_arm(
+            self,
+            body_name: str,
+            radius: float,
+            height: float,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False,
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
+            texture_path: Optional[str] = None,
+            visual_mesh_path: Optional[str] = None,  # Existing argument
+            visual_mesh_scale: Optional[np.ndarray] = None  # <-- New argument
+    ) -> None:
+        rgba_color = rgba_color if rgba_color is not None else np.zeros(4)
+        specular_color = specular_color if specular_color is not None else np.zeros(3)
+
+        # Load the texture if provided
+        texture_id = None
+        if texture_path is not None:
+            texture_id = self.physics_client.loadTexture(texture_path)
+
+        # Use custom visual mesh if provided
+        if visual_mesh_path is not None:
+            visual_kwargs = {
+                "fileName": visual_mesh_path,
+                "meshScale": [0.00000001, 0.00000001, 0.00000001],
+                # Use the provided scale or default to [1, 1, 1]
+                "specularColor": specular_color,
+                "rgbaColor": rgba_color
+            }
+        else:
+            visual_kwargs = {
+                "radius": radius,
+                "length": height,
+                "specularColor": specular_color,
+                "rgbaColor": rgba_color,
+            }
+
+        collision_kwargs = {"radius": radius, "height": height}
+
         self._create_geometry(
             body_name,
             geom_type=self.physics_client.GEOM_CYLINDER,
@@ -752,6 +842,67 @@ class PyBullet:
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
         )
+
+    def create_target(
+            self,
+            body_name: str,
+            half_extents: np.ndarray,
+            mass: float,
+            position: np.ndarray,
+            rgba_color: Optional[np.ndarray] = None,
+            specular_color: Optional[np.ndarray] = None,
+            ghost: bool = False, # disabled
+            lateral_friction: Optional[float] = None,
+            spinning_friction: Optional[float] = None,
+            texture: Optional[str] = None,
+    ) -> None:
+        """Create a geometry.
+
+        Args:
+            body_name (str): The name of the body. Must be unique in the sim.
+            geom_type (int): The geometry type. See self.physics_client.GEOM_<shape>.
+            mass (float, optional): The mass in kg. Defaults to 0.
+            position (np.ndarray, optional): The position, as (x, y, z). Defaults to [0, 0, 0].
+            ghost (bool, optional): Whether the body can collide. Defaults to False.
+            lateral_friction (float or None, optional): Lateral friction. If None, use the default pybullet
+                value. Defaults to None.
+            spinning_friction (float or None, optional): Spinning friction. If None, use the default pybullet
+                value. Defaults to None.
+            visual_kwargs (dict, optional): Visual kwargs. Defaults to {}.
+            collision_kwargs (dict, optional): Collision kwargs. Defaults to {}.
+        """
+        position = position if position is not None else np.zeros(3)
+
+        rgba_color = rgba_color if rgba_color is not None else np.zeros(4)
+        specular_color = specular_color if specular_color is not None else np.zeros(3)
+        visual_kwargs = {
+            "halfExtents": half_extents,
+            "specularColor": specular_color,
+            "rgbaColor": rgba_color,
+        }
+        collision_kwargs = {"halfExtents": half_extents}
+        geom_type = self.physics_client.GEOM_BOX
+
+        baseVisualShapeIndex = self.physics_client.createVisualShape(geom_type, **visual_kwargs)
+        baseCollisionShapeIndex = self.physics_client.createCollisionShape(geom_type, **collision_kwargs)
+
+        self._bodies_idx[body_name] = self.physics_client.createMultiBody(
+            baseVisualShapeIndex=baseVisualShapeIndex,
+            baseCollisionShapeIndex=baseCollisionShapeIndex,
+            baseMass=mass,
+            basePosition=position,
+        )
+        self.physics_client.setCollisionFilterGroupMask(self._bodies_idx[body_name], -1, 0, 0)
+
+        if lateral_friction is not None:
+            self.set_lateral_friction(body=body_name, link=-1, lateral_friction=lateral_friction)
+        if spinning_friction is not None:
+            self.set_spinning_friction(body=body_name, link=-1, spinning_friction=spinning_friction)
+
+        if texture is not None:
+            texture_path = os.path.join(UR_gym.assets.get_data_path(), texture)
+            texture_uid = self.physics_client.loadTexture(texture_path)
+            self.physics_client.changeVisualShape(self._bodies_idx[body_name], -1, textureUniqueId=texture_uid)
 
     def create_ab(self):
         self.create_box(

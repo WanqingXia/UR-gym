@@ -6,6 +6,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from gymnasium.utils import seeding
+from UR_gym.utils import *
 
 from UR_gym.pyb_setup import PyBullet
 
@@ -109,7 +110,7 @@ class PyBulletRobot(ABC):
         Returns:
             np.ndarray: Rotation as (x, y, z, w)
         """
-        return self.sim.get_link_orientation(self.body_name, link)
+        return self.sim.get_link_orientation(self.body_name, link, "euler")
 
     def get_link_angular_velocity(self, link: int) -> np.ndarray:
         """Returns the velocity of a link as (wx, wy, wz)
@@ -234,7 +235,6 @@ class RobotTaskEnv(gym.Env):
         self.robot = robot
         self.task = task
         observation, _ = self.reset()  # required for init; seed can be changed later
-        # self.task.generate_testset()
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape
         desired_goal_shape = observation["achieved_goal"].shape
@@ -251,7 +251,7 @@ class RobotTaskEnv(gym.Env):
 
     def _get_obs(self) -> Dict[str, np.ndarray]:
         robot_obs = self.robot.get_obs().astype(np.float32)  # robot state
-        task_obs = self.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+        task_obs = self.task.get_obs().astype(np.float32)  # object position, velocity, etc...
         observation = np.concatenate([robot_obs, task_obs])
         achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         return {
@@ -302,13 +302,17 @@ class RobotTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
+        if self.spec.id == "UR5DynReach-v1":
+            self.task.set_velocity()
+        elif (self.spec.id == "UR5StaReach-v1") and (not np.array_equal(self.task.obstacle_end, np.zeros(6))):
+            self.task.set_velocity()
         self.sim.step()
-        self.task.check_collision()
+        collision = self.task.check_collision()
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
-        terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or self.task.collision)
+        terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()) or collision)
         truncated = False
-        info = {"is_success": not self.task.collision if terminated else terminated}
+        info = {"is_success": not collision if terminated else terminated}
         reward = float(self.task.compute_reward(observation["achieved_goal"], self.task.get_goal(), info))
         return observation, reward, terminated, truncated, info
 
