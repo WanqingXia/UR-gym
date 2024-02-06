@@ -550,25 +550,26 @@ class ReachSta(Task):
         return self.collision
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        self.link_dist = self.sim.get_link_distances()
-        dist_change = self.link_dist - self.last_dist
-        self.last_dist = self.link_dist
+        """"collision reward"""
+        if self.collision:
+            return np.float64(self.collision_weight)
+        """success reward"""
+        if self.is_success(achieved_goal, desired_goal):
+            return np.float64(self.success_weight)
+        """distance reward"""
         dist = distance(achieved_goal, desired_goal)
         ori_dist = angular_distance(achieved_goal, desired_goal)
-
         reward = np.float64(0.0)
-        """success reward"""
-        reward += np.where(self.is_success(achieved_goal, desired_goal), self.success_weight, 0)
-        """"collision reward"""
-        reward += self.collision_weight if self.collision else 0
-        """distance reward"""
+
         reward += self.distance_weight * dist
         """orientation reward"""
         reward += self.orientation_weight * ori_dist
         """obstacle distance reward"""
+        self.link_dist = self.sim.get_link_distances()
+        dist_change = self.link_dist - self.last_dist
+        self.last_dist = self.link_dist
         reward_changes = np.where(self.link_dist < 0.2, self.dist_change_weight * dist_change, 0)
         reward += reward_changes.sum()
-
         return reward
 
 
