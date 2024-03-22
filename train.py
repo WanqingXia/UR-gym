@@ -12,7 +12,7 @@ import wandb
 epochs = 4000000
 learning_rate = 1e-4
 gamma = 0.95
-# Available environments: UR5IAIReach-v1, UR5RegReach-v1, UR5OriReach-v1, UR5ObsReach-v1, UR5StaReach-v1, UR5DynReach-v1
+# Available environments: UR5OriReach-v1, UR5ObsReach-v1, UR5StaReach-v1, UR5DynReach-v1
 environment = "UR5DynReach-v1"
 
 wandb.init(
