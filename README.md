@@ -17,7 +17,7 @@ We have developed four distinct environments for the UR5e robot, enhancing its a
     
 -   **UR5DynReach-v1**: Challenges the robot to reach a specified coordinate, aligning both position and orientation in a dynamic environment with moving obstacles.
 ```
-[![IMAGE ALT TEXT HERE](UR_gym/assets/cover.png)](https://www.youtube.com/watch?v=Tq03JQw-MHw)
+[![IMAGE ALT TEXT HERE](https://raw.githubusercontent.com/WanqingXia/UR-gym/combine/UR_gym/assets/cover.png)](https://www.youtube.com/watch?v=Tq03JQw-MHw)
 ```
 
 ## Installation
