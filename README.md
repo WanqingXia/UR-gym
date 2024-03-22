@@ -16,9 +16,8 @@ We have developed four distinct environments for the UR5e robot, enhancing its a
 -   **UR5StaReach-v1**: Enhances the robot's precision in reaching a designated coordinate with both position and orientation alignment, in the presence of static obstacles.
     
 -   **UR5DynReach-v1**: Challenges the robot to reach a specified coordinate, aligning both position and orientation in a dynamic environment with moving obstacles.
-```
-[![IMAGE ALT TEXT HERE](https://raw.githubusercontent.com/WanqingXia/UR-gym/main/UR_gym/assets/cover.png)](https://www.youtube.com/watch?v=Tq03JQw-MHw)
-```
+
+  ![IMAGE ALT TEXT HERE](https://raw.githubusercontent.com/WanqingXia/UR-gym/main/UR_gym/assets/cover.png)](https://www.youtube.com/watch?v=Tq03JQw-MHw)
 
 ## Installation
 ```bash
