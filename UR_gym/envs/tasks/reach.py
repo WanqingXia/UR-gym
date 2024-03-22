@@ -682,22 +682,22 @@ class ReachDyn(Task):
         if self.collision:
             print("Collision after reset, this should not happen")
 
-    # def reset_generate(self, i, j, k) -> None:
-    #     self.collision = False
-    #     distance_fail = True
-    #     while distance_fail:
-    #         goal_pos = np.array([self.goal_range_low[0] + i * 0.05, self.goal_range_low[1] + j * 0.05, self.goal_range_low[2] + k * 0.05])
-    #
-    #         goal_rot = sample_euler_constrained()
-    #         goal = np.concatenate((goal_pos, goal_rot))
-    #         self.goal = goal
-    #
-    #         self.obstacle_start = self._sample_obstacle()
-    #         self.obstacle_end = self._sample_obstacle()
-    #         self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
-    #         self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
-    #         start_end_dist = distance(self.obstacle_end, self.obstacle_start)
-    #         distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 0.3)
+    def reset_generate(self, i, j, k) -> None:
+        self.collision = False
+        distance_fail = True
+        while distance_fail:
+            goal_pos = np.array([self.goal_range_low[0] + i * 0.05, self.goal_range_low[1] + j * 0.05, self.goal_range_low[2] + k * 0.05])
+
+            goal_rot = sample_euler_constrained()
+            goal = np.concatenate((goal_pos, goal_rot))
+            self.goal = goal
+
+            self.obstacle_start = self._sample_obstacle()
+            self.obstacle_end = self._sample_obstacle()
+            self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
+            self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
+            start_end_dist = distance(self.obstacle_end, self.obstacle_start)
+            distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 0.3)
 
     def set_goal_and_obstacle(self, test_data):
         self.goal = test_data[:6]

@@ -6,6 +6,7 @@ import UR_gym
 from stable_baselines3 import SAC
 import time
 from tqdm import tqdm
+from utils.generate import generate
 
 
 # The original get_obs() function in core.py is prohibited to use, so we need to define a new one
@@ -86,4 +87,13 @@ def show_traj(points):
 
 
 if __name__ == "__main__":
-    show_traj(np.loadtxt('testset_dyn.txt'))
+    # Available environments: UR5OriReach-v1, UR5ObsReach-v1, UR5StaReach-v1, UR5DynReach-v1
+    env_name = "UR5DynReach-v1"
+    env = gymnasium.make(env_name, render=True)
+    test_points = generate(env, env_name)
+    if test_points is None:
+        print("No test points are generated. Please check the environment name.")
+        exit(1)
+    # choose the trained model
+    env.close()
+    show_traj(test_points)
