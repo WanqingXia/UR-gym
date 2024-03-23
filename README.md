@@ -13,7 +13,7 @@ We have developed four distinct environments for the UR5e robot, enhancing its a
     
 -   **UR5ObsReach-v1**: Focuses on the robot's capability to reach a designated coordinate by aligning its position while navigating through an environment with static obstacles.
     
--   **UR5StaReach-v1**: Enhances the robot's precision in reaching a designated coordinate with both position and orientation alignment, in the presence of static obstacles.
+-   **UR5StaReach-v1**: Enhances the robot's precision in reaching a designated coordinate with both position and orientation alignment in the presence of static obstacles.
     
 -   **UR5DynReach-v1**: Challenges the robot to reach a specified coordinate, aligning both position and orientation in a dynamic environment with moving obstacles.
 
@@ -29,32 +29,32 @@ git clone https://github.com/WanqingXia/UR-gym.git
 <pre>
 UR-gym
 |──Trained_Models
-	|──Trained_Dyn            # Trained model with UR5DynReach-v1 environment
-	|──Trained_Obs            # Trained model with UR5ObsReach-v1 environment
-	|──Trained_Ori            # Trained model with UR5OriReach-v1 environment
-	└──Trained_Sta            # Trained model with UR5StaReach-v1 environment
-|──UR_gym                     # Main code for environment construction
-	|──assets                 # Images used for rendering
-	|──envs                   # Environments
+	|──Trained_Dyn                # Trained model with UR5DynReach-v1 environment
+	|──Trained_Obs                # Trained model with UR5ObsReach-v1 environment
+	|──Trained_Ori                # Trained model with UR5OriReach-v1 environment
+	└──Trained_Sta                # Trained model with UR5StaReach-v1 environment
+|──UR_gym                             # Main code for environment construction
+	|──assets                     # Images used for rendering
+	|──envs                       # Environments
 		|──robots
-			|──meshes         # Meshes for UR5e robot
-			|──urdf           # URDF file for UR5e robot
-			└──UR5.py         # Defines robot behaviour
+			|──meshes     # Meshes for UR5e robot
+			|──urdf       # URDF file for UR5e robot
+			└──UR5.py     # Defines robot behaviour
 		|──tasks			  
-			└──reach.py		  # Define our environments
+			└──reach.py   # Define our environments
 		|──core.py            # Core functions for environments
 		└──ur_tasks.py
-	|──pyb_setup.py           # Core functions for PyBullet setup
-	└──utils.py               # Helpful utils
+	|──pyb_setup.py               # Core functions for PyBullet setup
+	└──utils.py                   # Helpful utils
 |──utils
-	|──callbackFunctions.py   # Callback functions for logging
-	└──generate.py            # Functions to generate test set
-|──demo.py                    # Demo code
-|──model_test.py              # Test trained model
-|──robot_show.py              # Display the virtual robot
+	|──callbackFunctions.py       # Callback functions for logging
+	└──generate.py                # Functions to generate test set
+|──demo.py                            # Demo code
+|──model_test.py                      # Test trained model
+|──robot_show.py                      # Display the virtual robot
 |──setup.py
-|──show_traj.py               # Record robot moving trajectory
-└──train.py                   # Robot training code
+|──show_traj.py                       # Record robot moving trajectory
+└──train.py                           # Robot training code
 </pre>
 ```
 ## Usage
