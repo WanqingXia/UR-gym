@@ -82,7 +82,7 @@ env.close()
 
 ### Train the model
 ```python
-# Train a SAC controlled UR5e robot to avoid dynamic obstacles
+# Train a SAC-controlled UR5e robot to avoid dynamic obstacles
 python train.py
 ```
 
@@ -90,3 +90,7 @@ python train.py
 ```python
 python model_test.py
 ```
+
+### Contact
+If you have any questions about this repository, please contact [Wanqing Xia](wxia612@aucklanduni.ac.nz) via email
+ 
