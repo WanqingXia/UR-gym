@@ -91,6 +91,6 @@ python train.py
 python model_test.py
 ```
 
-### Contact
+## Contact
 If you have any questions about this repository, please contact Wanqing Xia via email <wxia612@aucklanduni.ac.nz>
  
