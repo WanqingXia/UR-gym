@@ -581,10 +581,10 @@ class ReachDyn(Task):
     ) -> None:
         super().__init__(sim)
         self.robot = robot
-        self.goal_range_low = np.array([0.3, -0.5, 0.0])  # table width, table length, height
+        self.goal_range_low = np.array([0.4, -0.5, 0.0])  # table width, table length, height
         self.goal_range_high = np.array([0.75, 0.5, 0.2])
-        self.obs_range_low = np.array([0.5, -0.5, 0.25])  # table width, table length, height
-        self.obs_range_high = np.array([1.0, 0.5, 0.55])
+        self.obs_range_low = np.array([0.5, -0.8, 0.25])  # table width, table length, height
+        self.obs_range_high = np.array([1.2, 0.8, 0.75])
 
         # margin and weight
         self.distance_threshold = 0.05  # 5cm
@@ -635,18 +635,18 @@ class ReachDyn(Task):
         )
         self.sim.create_box(
             body_name="zone_goal",
-            half_extents=np.array([0.225, 0.5, 0.1]),
+            half_extents=(self.goal_range_high - self.goal_range_low) / 2,
             mass=0.0,
             ghost=True,
-            position=np.array([0.525, 0.0, 0.1]),
+            position=(self.goal_range_high + self.goal_range_low) / 2,
             rgba_color=np.array([1.0, 1.0, 1.0, 0.3]),
         )
         self.sim.create_box(
             body_name="zone_obs",
-            half_extents=np.array([0.25, 0.5, 0.15]),
+            half_extents=(self.obs_range_high - self.obs_range_low) / 2,
             mass=0.0,
             ghost=True,
-            position=np.array([0.75, 0.0, 0.4]),
+            position=(self.obs_range_high + self.obs_range_low) / 2,
             rgba_color=np.array([1.0, 1.0, 1.0, 0.2]),
         )
 
@@ -672,7 +672,7 @@ class ReachDyn(Task):
             self.sim.set_base_pose("target", self.goal[:3], self.goal[3:])
             self.sim.set_base_pose("obstacle", self.obstacle_end[:3], self.obstacle_end[3:])
             start_end_dist = distance(self.obstacle_end, self.obstacle_start)
-            distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 0.3)
+            distance_fail = (self.sim.get_target_to_obstacle_distance() < 0.1) or (start_end_dist < 1)
 
         # set obstacle to start position after checking
         self.sim.set_base_pose("obstacle", self.obstacle_start[:3], self.obstacle_start[3:])

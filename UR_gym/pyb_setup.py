@@ -34,7 +34,7 @@ class PyBullet:
         self.connection_mode = p.GUI if render else p.DIRECT
         self.physics_client = bc.BulletClient(connection_mode=self.connection_mode, options=options)
         self.physics_client.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        self.physics_client.configureDebugVisualizer(p.COV_ENABLE_MOUSE_PICKING, 0)
+        self.physics_client.configureDebugVisualizer(p.COV_ENABLE_MOUSE_PICKING, 1)
 
         self.n_substeps = n_substeps
         self.timestep = 1.0 / 500
@@ -774,7 +774,7 @@ class PyBullet:
             mass=0.0,
             position=np.array([0.0, 0.0, z_offset - 0.01]),
             specular_color=np.zeros(3),
-            rgba_color=np.array([0.15, 0.15, 0.15, 1.0]),
+            rgba_color=np.array([105/255, 105/255, 105/255, 1.0]),
         )
 
     def create_table(

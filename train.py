@@ -9,7 +9,7 @@ import UR_gym
 import os
 import wandb
 
-epochs = 4000000
+epochs = 6000000
 learning_rate = 1e-4
 gamma = 0.95
 # Available environments: UR5OriReach-v1, UR5ObsReach-v1, UR5StaReach-v1, UR5DynReach-v1

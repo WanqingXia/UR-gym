@@ -70,6 +70,6 @@ if __name__ == "__main__":
         exit(1)
     # choose the trained model
     model_path = "./Trained_Models/Trained_Dyn/best_model"
-    model = SAC.load(model_path + "best_model", env=env)
+    model = SAC.load(model_path, env=env)
     run_test(env, env_name, model, test_points)
 

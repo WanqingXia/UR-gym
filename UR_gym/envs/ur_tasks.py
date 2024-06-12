@@ -84,7 +84,7 @@ class UR5DynReachEnv(RobotTaskEnv):
     """
 
     def __init__(self, render: bool = False) -> None:
-        sim = PyBullet(render=render)
+        sim = PyBullet(render=render, background_color=np.array([135, 206, 250]))
         robot = UR5Ori(sim, block_gripper=True, base_position=np.array([0.0, 0.0, 0.0]))
         task = ReachDyn(sim, robot=robot)
         super().__init__(robot, task)
